@@ -133,7 +133,6 @@ class WBPDecoder(Trainer):
         MAX_SIZE = 5000
         BATCH_SIZE = min(MAX_SIZE, x.shape[0])
         for i in range(x.shape[0] // BATCH_SIZE):
-            print(i)
             output_list, not_satisfied_list = self._forward(x[i * BATCH_SIZE:(i + 1) * BATCH_SIZE])
             for iter in range(self.iteration_num + 1):
                 total_output_list[iter].append(output_list[iter])
