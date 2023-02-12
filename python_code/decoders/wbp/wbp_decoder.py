@@ -3,12 +3,12 @@ import torch
 
 from python_code import DEVICE
 from python_code.channel.ecc_channel import load_code_parameters
-from python_code.decoders.wbp.bp_nn import InputLayer, EvenLayer, OddLayer, OutputLayer
 from python_code.decoders.trainer import Trainer
+from python_code.decoders.wbp.bp_nn import InputLayer, EvenLayer, OddLayer, OutputLayer
 
 
 def llr2bits(llr_vector):
-    return torch.round(torch.sigmoid(-llr_vector)).double()
+    return torch.round(torch.sigmoid(-llr_vector))
 
 
 def syndrome_condition(unsatisfied, llr_words, code_parityCheckMatrix):
@@ -76,7 +76,7 @@ class WBPDecoder(Trainer):
             # select 5 samples randomly
             idx = torch.randperm(tx.shape[0])[:BATCH_SIZE]
             cur_tx, cur_rx = tx[idx], rx[idx]
-            output_list, not_satisfied_list = self.forward(cur_rx)
+            output_list, not_satisfied_list = self._forward(cur_rx)
 
             # calculate loss
             loss = self.calc_loss(decision=output_list[-self.iteration_num:], labels=cur_tx,
@@ -85,7 +85,7 @@ class WBPDecoder(Trainer):
             loss.backward()
             self.optimizer.step()
 
-    def forward(self, x):
+    def _forward(self, x):
         """
         compute forward pass in the network
         :param x: [batch_size,N]
@@ -126,3 +126,22 @@ class WBPDecoder(Trainer):
         output_list[-1][not_satisfied] = x[not_satisfied] + self.output_layer.forward(even_output[not_satisfied],
                                                                                       mask_only=self.output_mask_only)
         return output_list, not_satisfied_list
+
+    def forward(self, x):
+        total_output_list = [[] for _ in range(self.iteration_num + 1)]
+        total_not_satisfied_list = [[] for _ in range(self.iteration_num - 1)]
+        MAX_SIZE = 5000
+        BATCH_SIZE = min(MAX_SIZE, x.shape[0])
+        for i in range(x.shape[0] // BATCH_SIZE):
+            print(i)
+            output_list, not_satisfied_list = self._forward(x[i * BATCH_SIZE:(i + 1) * BATCH_SIZE])
+            for iter in range(self.iteration_num + 1):
+                total_output_list[iter].append(output_list[iter])
+            for iter in range(self.iteration_num - 1):
+                total_not_satisfied_list[iter].append(not_satisfied_list[iter])
+
+        for iter in range(self.iteration_num + 1):
+            total_output_list[iter] = torch.cat(total_output_list[iter])
+        for iter in range(self.iteration_num - 1):
+            total_not_satisfied_list[iter] = torch.cat(total_not_satisfied_list[iter])
+        return total_output_list, total_not_satisfied_list

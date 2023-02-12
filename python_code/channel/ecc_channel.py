@@ -57,7 +57,7 @@ class ECCchannel:
         self.code_pcm, self.code_gm, self.t = load_code_parameters(self._bits_num, self._parity_bits_num,
                                                                    self._ecc_mat_path,
                                                                    self.tanner_graph_cycle_reduction)
-        self.encoding = lambda u: (np.dot(u, self.code_gm) % 2).astype('double')
+        self.encoding = lambda u: (np.dot(u, self.code_gm) % 2)
         self.modulater = BPSKModulator
         self.rate = float(self._parity_bits_num / self._bits_num)
         self.use_llr = True
