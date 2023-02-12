@@ -3,7 +3,7 @@ import torch
 
 from python_code import DEVICE
 from python_code.channel.ecc_channel import load_code_parameters
-from python_code.decoders.bp_nn import InputLayer, EvenLayer, OddLayer, OutputLayer
+from python_code.decoders.bayesian_wbp.bayesian_bp_nn import InputLayer, EvenLayer, OddLayer, OutputLayer
 from python_code.decoders.trainer import Trainer
 
 
@@ -23,7 +23,7 @@ def syndrome_condition(unsatisfied, llr_words, code_parityCheckMatrix):
 EPOCHS = 200
 
 
-class WBPDecoder(Trainer):
+class BayesianWBPDecoder(Trainer):
     def __init__(self):
         super().__init__()
         self.lr = 1e-3

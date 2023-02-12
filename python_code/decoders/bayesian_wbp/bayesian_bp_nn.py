@@ -1,4 +1,5 @@
 import torch
+from torch import nn
 from torch.nn.parameter import Parameter
 
 from python_code.decoders.bp_nn_weights import initialize_w_init, initialize_w_c2v, init_w_skipconn2even, \
@@ -38,12 +39,13 @@ class EvenLayer(torch.nn.Module):
         self.w_even2odd_mask = w_even2odd_mask.to(device=device)
         self.neurons = neurons
         self.clip_tanh = clip_tanh
+        self.dropout_logit = nn.Parameter(torch.rand(self.neurons).reshape(1, -1))
 
     def forward(self, x, mask_only=False):
-        log_abs_x = torch.log(torch.abs(x)+1e-8)
+        log_abs_x = torch.log(torch.abs(x) + 1e-8)
         x_b = 0.5 - 0.5 * torch.sign(x)
         syndrome = torch.matmul(x_b, self.w_even2odd_mask) % 2
-        bipolar_syndrome = 1 - 2*syndrome
+        bipolar_syndrome = 1 - 2 * syndrome
         if mask_only:
             log_abs_x_tanner = torch.matmul(log_abs_x, self.w_even2odd_mask)
         else:
