@@ -1,0 +1,20 @@
+# general
+seed: 0 # run seed
+
+# channel
+channel_type: 'SISO' # Channel type values: ['SISO','SISO'].
+channel_model: 'AWGN' # Physical channel models: ['Cost2100','AWGN']
+decoder_type: 'wbp'
+linear: True # channel linearity. Boolean value.
+snr: 6 # validation SNR value. values: float.
+modulation_type: 'BPSK' # ['BPSK','QPSK','EightPSK']
+
+# protocol
+block_length: 11000 # coherence block time, total size of pilot + data. values: int.
+pilot_size: 1000 # pilot bits
+blocks_num: 100 # number of validation frames. values: int.
+
+# online training hyperparameters
+is_online_training: True # Whether to run the online training (as in ViterbiNet). values: [True, False].
+loss_type: 'BCEWithLogits' # Loss type. values: 'BCEWithLogits','CrossEntropy','MSE'.
+optimizer_type: 'RMSprop' # Optimizer type. values: 'Adam','RMSprop','SGD'.
