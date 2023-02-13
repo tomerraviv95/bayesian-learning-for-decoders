@@ -3,7 +3,7 @@ seed: 0 # run seed
 
 # channel
 channel_model: 'AWGN' # Physical channel models: ['AWGN']
-decoder_type: 'bp' # 'bp','wbp','seq_wbp','model_based_bayesian_wbp'
+decoder_type: 'wbp' # 'wbp','bp','seq_wbp','model_based_bayesian_wbp'
 snr: 6 # validation SNR value. values: float.
 code_bits: 127
 info_bits: 64

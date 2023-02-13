@@ -14,6 +14,9 @@ class SequentialWBPDecoder(Trainer):
         self.output_mask_only = True
         self.is_online_training = True
 
+    def __str__(self):
+        return 'Sequential WBP Decoder'
+
     def initialize_layers(self):
         self.input_layer = InputLayer(input_output_layer_size=self._code_bits, neurons=self.neurons,
                                       code_pcm=self.code_pcm, clip_tanh=CLIPPING_VAL,

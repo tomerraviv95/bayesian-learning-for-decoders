@@ -1,18 +1,20 @@
 import torch
 
 from python_code import DEVICE
-from python_code.decoders.bp.bp_nn import InputLayer, OddLayer, EvenLayer, OutputLayer
 from python_code.decoders.trainer import Trainer
-from python_code.utils.constants import MAX_SIZE, CLIPPING_VAL
+from python_code.decoders.bp.bp_nn import InputLayer, OddLayer, EvenLayer, OutputLayer
+from python_code.utils.constants import MAX_SIZE, EPOCHS, BATCH_SIZE, CLIPPING_VAL
 from python_code.utils.python_utils import syndrome_condition
 
 
-class BPDecoder(Trainer):
+class WBPDecoder(Trainer):
     def __init__(self):
         super().__init__()
-        self.lr = None
-        self.is_online_training = False
-        self.initialize_layers()
+        self.lr = 1e-3
+        self.is_online_training = True
+
+    def __str__(self):
+        return 'WBP Decoder'
 
     def initialize_layers(self):
         self.input_layer = InputLayer(input_output_layer_size=self._code_bits, neurons=self.neurons,
@@ -27,11 +29,32 @@ class BPDecoder(Trainer):
                                         input_output_layer_size=self._code_bits,
                                         code_pcm=self.code_pcm)
 
+
     def calc_loss(self, decision, labels, not_satisfied_list):
-        pass
+        loss = self.criterion(input=-decision[-1], target=labels)
+        if self.multi_loss_flag:
+            for iteration in range(self.iteration_num - 1):
+                if type(not_satisfied_list[iteration]) == int:
+                    break
+                current_loss = self.criterion(input=-decision[iteration],
+                                              target=torch.index_select(labels, 0, not_satisfied_list[iteration]))
+                loss += current_loss
+        return loss
 
     def _online_training(self, tx: torch.Tensor, rx: torch.Tensor):
-        pass
+        self.initialize_layers()
+        self.deep_learning_setup(self.lr)
+        for _ in range(EPOCHS):
+            # select 5 samples randomly
+            idx = torch.randperm(tx.shape[0])[:BATCH_SIZE]
+            cur_tx, cur_rx = tx[idx], rx[idx]
+            output_list, not_satisfied_list = self._forward(cur_rx)
+            # calculate loss
+            loss = self.calc_loss(decision=output_list[-self.iteration_num:], labels=cur_tx,
+                                  not_satisfied_list=not_satisfied_list)
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
 
     def _forward(self, x):
         """

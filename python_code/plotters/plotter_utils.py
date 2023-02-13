@@ -80,7 +80,7 @@ def get_all_plots(dec: Trainer, run_over: bool, method_name: str, trial=None):
     # set the path to saved plot results for a single method (so we do not need to run anew each time)
     if not os.path.exists(PLOTS_DIR):
         os.makedirs(PLOTS_DIR)
-    file_name = '_'.join([method_name, str(conf.channel_type)])
+    file_name = '_'.join([method_name])
     if trial is not None:
         file_name = file_name + '_' + str(trial)
     plots_path = os.path.join(PLOTS_DIR, file_name)
