@@ -15,6 +15,7 @@ class BayesianWBPDecoder(Trainer):
         self.ensemble_num = 5
         self.kl_beta = 1e-4
         self.beta = 1e-2
+        self.is_online_training = True
 
     def initialize_layers(self):
         self.input_layer = InputLayer(input_output_layer_size=self._code_bits, neurons=self.neurons,

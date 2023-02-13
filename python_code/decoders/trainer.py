@@ -117,7 +117,7 @@ class Trainer(nn.Module):
             # split words into data and pilot part
             tx_pilot, tx_data = tx[:conf.pilot_size], tx[conf.pilot_size:]
             rx_pilot, rx_data = rx[:conf.pilot_size], rx[conf.pilot_size:]
-            if conf.is_online_training:
+            if self.is_online_training:
                 # re-train the detector
                 self._online_training(tx_pilot, rx_pilot)
             # detect data part after training on the pilot part

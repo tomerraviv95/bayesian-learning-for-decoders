@@ -1,77 +1,42 @@
 from enum import Enum
 from typing import Tuple, List, Dict
 
-import numpy as np
-
 from python_code.utils.constants import DecoderType
 
 
 class PlotType(Enum):
     ## The Three Figures for the Paper
-    MIMO_BY_SNR_QPSK = 'MIMO_BY_SNR_QPSK'
-    MIMO_BY_SNR_EightPSK = 'MIMO_BY_SNR_EightPSK'
-    MIMO_BY_RELIABILITY_EightPSK = 'MIMO_BY_RELIABILITY_EightPSK'
+    BY_SNR_LONG_CODE = 'BY_SNR_LONG_CODE'
+    BY_SNR_SHORT_CODE = 'BY_SNR_SHORT_CODE'
 
 
 def get_config(plot_type: PlotType) -> Tuple[List[Dict], list, str, str]:
-    if plot_type == PlotType.MIMO_BY_SNR_QPSK:
+    if plot_type == PlotType.BY_SNR_LONG_CODE:
         params_dicts = [
-            {'snr': 4, 'detector_type': DecoderType.black_box.name},
-            {'snr': 6, 'detector_type': DecoderType.black_box.name},
-            {'snr': 8, 'detector_type': DecoderType.black_box.name},
-            {'snr': 10, 'detector_type': DecoderType.black_box.name},
-            {'snr': 12, 'detector_type': DecoderType.black_box.name},
-            {'snr': 4, 'detector_type': DecoderType.bayesian.name},
-            {'snr': 6, 'detector_type': DecoderType.bayesian.name},
-            {'snr': 8, 'detector_type': DecoderType.bayesian.name},
-            {'snr': 10, 'detector_type': DecoderType.bayesian.name},
-            {'snr': 12, 'detector_type': DecoderType.bayesian.name},
-            {'snr': 4, 'detector_type': DecoderType.seq_model.name},
-            {'snr': 6, 'detector_type': DecoderType.seq_model.name},
-            {'snr': 8, 'detector_type': DecoderType.seq_model.name},
-            {'snr': 10, 'detector_type': DecoderType.seq_model.name},
-            {'snr': 12, 'detector_type': DecoderType.seq_model.name},
-            {'snr': 4, 'detector_type': DecoderType.model_based_bayesian.name},
-            {'snr': 6, 'detector_type': DecoderType.model_based_bayesian.name},
-            {'snr': 8, 'detector_type': DecoderType.model_based_bayesian.name},
-            {'snr': 10, 'detector_type': DecoderType.model_based_bayesian.name},
-            {'snr': 12, 'detector_type': DecoderType.model_based_bayesian.name},
+            {'snr': 2, 'detector_type': DecoderType.wbp.name},
+            {'snr': 4, 'detector_type': DecoderType.wbp.name},
+            {'snr': 6, 'detector_type': DecoderType.wbp.name},
+            {'snr': 8, 'detector_type': DecoderType.wbp.name},
+            {'snr': 2, 'detector_type': DecoderType.model_based_bayesian_wbp.name},
+            {'snr': 4, 'detector_type': DecoderType.model_based_bayesian_wbp.name},
+            {'snr': 6, 'detector_type': DecoderType.model_based_bayesian_wbp.name},
+            {'snr': 8, 'detector_type': DecoderType.model_based_bayesian_wbp.name},
         ]
-        values = list(range(4, 13, 2))
+        values = list(range(2, 9, 2))
         xlabel, ylabel = 'SNR', 'SER'
-    elif plot_type == PlotType.MIMO_BY_SNR_EightPSK:
+    elif plot_type == PlotType.BY_SNR_SHORT_CODE:
         params_dicts = [
-            {'snr': 4, 'detector_type': DecoderType.black_box.name},
-            {'snr': 6, 'detector_type': DecoderType.black_box.name},
-            {'snr': 8, 'detector_type': DecoderType.black_box.name},
-            {'snr': 10, 'detector_type': DecoderType.black_box.name},
-            {'snr': 12, 'detector_type': DecoderType.black_box.name},
-            {'snr': 4, 'detector_type': DecoderType.bayesian.name},
-            {'snr': 6, 'detector_type': DecoderType.bayesian.name},
-            {'snr': 8, 'detector_type': DecoderType.bayesian.name},
-            {'snr': 10, 'detector_type': DecoderType.bayesian.name},
-            {'snr': 12, 'detector_type': DecoderType.bayesian.name},
-            {'snr': 4, 'detector_type': DecoderType.seq_model.name},
-            {'snr': 6, 'detector_type': DecoderType.seq_model.name},
-            {'snr': 8, 'detector_type': DecoderType.seq_model.name},
-            {'snr': 10, 'detector_type': DecoderType.seq_model.name},
-            {'snr': 12, 'detector_type': DecoderType.seq_model.name},
-            {'snr': 4, 'detector_type': DecoderType.model_based_bayesian.name},
-            {'snr': 6, 'detector_type': DecoderType.model_based_bayesian.name},
-            {'snr': 8, 'detector_type': DecoderType.model_based_bayesian.name},
-            {'snr': 10, 'detector_type': DecoderType.model_based_bayesian.name},
-            {'snr': 12, 'detector_type': DecoderType.model_based_bayesian.name},
+            {'snr': 2, 'detector_type': DecoderType.wbp.name},
+            {'snr': 4, 'detector_type': DecoderType.wbp.name},
+            {'snr': 6, 'detector_type': DecoderType.wbp.name},
+            {'snr': 8, 'detector_type': DecoderType.wbp.name},
+            {'snr': 2, 'detector_type': DecoderType.model_based_bayesian_wbp.name},
+            {'snr': 4, 'detector_type': DecoderType.model_based_bayesian_wbp.name},
+            {'snr': 6, 'detector_type': DecoderType.model_based_bayesian_wbp.name},
+            {'snr': 8, 'detector_type': DecoderType.model_based_bayesian_wbp.name},
         ]
-        values = list(range(8, 17, 2))
+        values = list(range(2, 9, 2))
         xlabel, ylabel = 'SNR', 'SER'
-    elif plot_type == PlotType.MIMO_BY_RELIABILITY_EightPSK:
-        params_dicts = [
-            {'snr': 10, 'detector_type': DecoderType.bayesian.name},
-            {'snr': 10, 'detector_type': DecoderType.model_based_bayesian.name},
-            {'snr': 10, 'detector_type': DecoderType.seq_model.name},
-        ]
-        values = np.linspace(start=0.5, stop=1, num=6)
-        xlabel, ylabel = 'Confidence', 'Accuracy/Confidence'
     else:
         raise ValueError('No such plot type!!!')
 
