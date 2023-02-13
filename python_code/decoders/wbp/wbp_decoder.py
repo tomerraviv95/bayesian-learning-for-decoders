@@ -92,10 +92,9 @@ class WBPDecoder(Trainer):
         """
         # initialize parameters
         x = x.float()
-        output_list = [0] * (self.iteration_num + 1)
+        output_list = [0] * self.iteration_num
         not_satisfied_list = [0] * (self.iteration_num - 1)
         not_satisfied = torch.arange(x.size(0), dtype=torch.long, device=DEVICE)
-        output_list[-1] = torch.zeros_like(x)
 
         # equation 1 and 2 from "Learning To Decode ..", i==1,2 (iteration 1)
         even_output = self.input_layer.forward(x)
@@ -122,23 +121,21 @@ class WBPDecoder(Trainer):
                 not_satisfied = syndrome_condition(not_satisfied, output_not_satisfied, self.code_pcm)
             if not_satisfied.size(0) == 0:
                 break
-        output_list[-1][not_satisfied] = x[not_satisfied] + self.output_layer.forward(even_output[not_satisfied],
-                                                                                      mask_only=self.output_mask_only)
         return output_list, not_satisfied_list
 
     def forward(self, x):
-        total_output_list = [[] for _ in range(self.iteration_num + 1)]
+        total_output_list = [[] for _ in range(self.iteration_num)]
         total_not_satisfied_list = [[] for _ in range(self.iteration_num - 1)]
         MAX_SIZE = 5000
         BATCH_SIZE = min(MAX_SIZE, x.shape[0])
         for i in range(x.shape[0] // BATCH_SIZE):
             output_list, not_satisfied_list = self._forward(x[i * BATCH_SIZE:(i + 1) * BATCH_SIZE])
-            for iter in range(self.iteration_num + 1):
+            for iter in range(self.iteration_num):
                 total_output_list[iter].append(output_list[iter])
             for iter in range(self.iteration_num - 1):
                 total_not_satisfied_list[iter].append(not_satisfied_list[iter])
 
-        for iter in range(self.iteration_num + 1):
+        for iter in range(self.iteration_num):
             total_output_list[iter] = torch.cat(total_output_list[iter])
         for iter in range(self.iteration_num - 1):
             total_not_satisfied_list[iter] = torch.cat(total_not_satisfied_list[iter])

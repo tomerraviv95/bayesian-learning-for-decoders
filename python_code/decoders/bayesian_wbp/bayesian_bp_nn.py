@@ -5,7 +5,7 @@ from torch.nn.parameter import Parameter
 from python_code import DEVICE
 from python_code.decoders.bp_nn_weights import initialize_w_init, initialize_w_c2v, init_w_skipconn2even, \
     initialize_w_v2c, init_w_output
-from python_code.utils.bayesian_utils import dropout_ori, dropout_tilde
+from python_code.utils.bayesian_utils import dropout_ori, dropout_tilde, entropy
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -70,15 +70,18 @@ class OddLayer(torch.nn.Module):
             self.odd_weights = Parameter(w_odd2even)
             self.llr_weights = Parameter(w_skipconn2even)
         self.w_odd2even_mask = w_odd2even_mask.to(device=device)
-        self.dropout_logits = nn.Parameter(torch.rand(w_odd2even_mask.shape))
+        self.dropout_logit = nn.Parameter(torch.rand(w_odd2even_mask.shape[0])).to(DEVICE)
         self.w_skipconn2even_mask = w_skipconn2even_mask.to(device=device)
         self.clip_tanh = clip_tanh
+        self.kl_scale = 5
 
     def forward(self, x, llr, llr_mask_only=False):
-        odd_weights_times_messages = torch.matmul(x, self.w_odd2even_mask * self.odd_weights)
-        self.u = torch.rand(odd_weights_times_messages.shape).to(DEVICE)
-        odd_weights_times_messages_after_dropout = dropout_ori(odd_weights_times_messages, self.dropout_logit, self.u)
-        odd_weights_times_messages_tilde = dropout_tilde(odd_weights_times_messages, self.dropout_logit, self.u)
+        self.u = torch.rand(self.odd_weights.shape).to(DEVICE)
+        total_mask = self.w_odd2even_mask * self.odd_weights
+        mask_after_dropout = dropout_ori(total_mask, self.dropout_logit, self.u)
+        odd_weights_times_messages_after_dropout = torch.matmul(x, mask_after_dropout)
+        mask_after_dropout_tilde = dropout_tilde(total_mask, self.dropout_logit, self.u)
+        odd_weights_times_messages_tilde = torch.matmul(x, mask_after_dropout_tilde)
         if llr_mask_only:
             odd_weights_times_llr = torch.matmul(llr, self.w_skipconn2even_mask)
         else:
@@ -89,8 +92,11 @@ class OddLayer(torch.nn.Module):
         # computation for ARM loss
         odd_clamp_tilde = torch.clamp(odd_weights_times_messages_tilde + odd_weights_times_llr,
                                       min=-self.clip_tanh, max=self.clip_tanh)
-        self.arm_tilde = torch.tanh(0.5 * odd_clamp_tilde)
-        self.arm_original = output.clone()
+        self.init_arm_tilde = torch.tanh(0.5 * odd_clamp_tilde)
+        scaling1 = (self.kl_scale ** 2 / 2) * (torch.sigmoid(self.dropout_logit).reshape(-1))
+        first_layer_kl = scaling1 * torch.norm(self.odd_weights, dim=1) ** 2
+        H1 = entropy(torch.sigmoid(self.dropout_logit).reshape(-1))
+        self.kl_term = torch.mean(first_layer_kl - H1)
         return output
 
 

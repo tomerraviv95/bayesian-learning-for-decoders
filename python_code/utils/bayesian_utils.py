@@ -4,7 +4,7 @@ import collections
 
 import torch
 
-LossVariable = collections.namedtuple('LossVariable', 'priors u_list arm_original arm_tilde dropout_logit kl_term')
+LossVariable = collections.namedtuple('LossVariable', 'priors u_list arm_original init_arm_tilde dropout_logit kl_term')
 
 
 def entropy(prob: torch.Tensor) -> torch.Tensor:

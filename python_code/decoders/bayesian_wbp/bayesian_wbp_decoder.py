@@ -5,6 +5,7 @@ from python_code import DEVICE
 from python_code.channel.ecc_channel import load_code_parameters
 from python_code.decoders.bayesian_wbp.bayesian_bp_nn import InputLayer, EvenLayer, OddLayer, OutputLayer
 from python_code.decoders.trainer import Trainer
+from python_code.utils.constants import HALF
 
 
 def llr2bits(llr_vector):
@@ -40,50 +41,89 @@ class BayesianWBPDecoder(Trainer):
         self.input_layer = InputLayer(input_output_layer_size=self._bits_num, neurons=self.neurons,
                                       code_pcm=self.code_pcm, clip_tanh=self.clip_tanh,
                                       bits_num=self._bits_num)
-        self.even_layer = EvenLayer(self.clip_tanh, self.neurons, self.code_pcm)
+        self.output_layer = OutputLayer(neurons=self.neurons,
+                                        input_output_layer_size=self._bits_num,
+                                        code_pcm=self.code_pcm)
         self.odd_layer = OddLayer(clip_tanh=self.clip_tanh,
                                   input_output_layer_size=self._bits_num,
                                   neurons=self.neurons,
                                   code_pcm=self.code_pcm)
-        self.multiloss_output_layer = OutputLayer(neurons=self.neurons,
-                                                  input_output_layer_size=self._bits_num,
-                                                  code_pcm=self.code_pcm)
+        self.even_layer = EvenLayer(self.clip_tanh, self.neurons, self.code_pcm)
         self.output_layer = OutputLayer(neurons=self.neurons,
                                         input_output_layer_size=self._bits_num,
                                         code_pcm=self.code_pcm)
+
         self.odd_llr_mask_only = True
         self.even_mask_only = True
-        self.multiloss_output_mask_only = True
         self.filter_in_iterations_eval = True
-        self.output_mask_only = False
-        self.multi_loss_flag = True
+        self.output_mask_only = True
+        self.ensemble_num = 5
+        self.kl_beta = 1e-3
+        self.beta = 1e-2
 
-    def calc_loss(self, decision, labels, not_satisfied_list):
-        loss = self.criterion(input=-decision[-1], target=labels)
-        if self.multi_loss_flag:
-            for iteration in range(self.iteration_num - 1):
-                if type(not_satisfied_list[iteration]) == int:
-                    break
-                current_loss = self.criterion(input=-decision[iteration],
-                                              target=torch.index_select(labels, 0, not_satisfied_list[iteration]))
-                loss += current_loss
-        return loss
+    def calc_loss(self, cur_tx, output, arm_original, arm_tilde, u_list, dropout_logit, kl_term):
+        # calculate loss
+        loss = self.criterion(input=-output, target=cur_tx)
+        # ARM Loss
+        arm_loss = 0
+        for ens_ind in range(self.ensemble_num):
+            loss_term_arm_original = self.criterion(input=-arm_original[ens_ind], target=cur_tx)
+            loss_term_arm_tilde = self.criterion(input=-arm_tilde[ens_ind], target=cur_tx)
+            arm_delta = (loss_term_arm_tilde - loss_term_arm_original)
+            grad_logit = arm_delta * (u_list[ens_ind] - HALF)
+            arm_loss += torch.matmul(grad_logit, dropout_logit.T)
+        arm_loss = torch.mean(arm_loss)
+        # KL Loss
+        kl_term = self.kl_beta * kl_term
+        extra_loss = arm_loss + kl_term
+        loss += self.beta * extra_loss
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
 
     def _online_training(self, tx: torch.Tensor, rx: torch.Tensor):
         self.deep_learning_setup(self.lr)
+        rx = rx.float()
         BATCH_SIZE = 64
-        for _ in range(EPOCHS):
-            # select 5 samples randomly
+        for e in range(EPOCHS):
+            # select samples randomly
             idx = torch.randperm(tx.shape[0])[:BATCH_SIZE]
             cur_tx, cur_rx = tx[idx], rx[idx]
-            output_list, not_satisfied_list = self._forward(cur_rx)
+            # initialize
+            even_output = self.input_layer.forward(cur_rx)
+            for i in range(0, self.iteration_num - 1):
+                arm_original, arm_tilde, u_list, kl_term = [], [], [], 0
+                output = 0
+                for _ in range(self.ensemble_num):
+                    # odd - variables to check
+                    odd_output = self.odd_layer.forward(even_output, cur_rx, llr_mask_only=self.odd_llr_mask_only)
+                    # propagate
+                    output += self.propagate(cur_rx, odd_output)
+                    ### ARM
+                    arm_original.append(output)
+                    init_arm_tilde = self.odd_layer.init_arm_tilde
+                    output_tilde = self.propagate(cur_rx, init_arm_tilde)
+                    arm_tilde.append(output_tilde)
+                    u_list.append(self.odd_layer.u)
+                kl_term = self.odd_layer.kl_term
+                output /= self.ensemble_num
+                self.calc_loss(cur_tx, output, arm_original, arm_tilde, u_list, self.odd_layer.dropout_logit, kl_term)
+                with torch.no_grad():
+                    even_output_est = 0
+                    # update the even_output to the next layer
+                    for _ in range(self.ensemble_num):
+                        # odd - variables to check
+                        odd_output = self.odd_layer.forward(even_output, cur_rx, llr_mask_only=self.odd_llr_mask_only)
+                        # even - check to variables
+                        even_output_est += self.even_layer.forward(odd_output, mask_only=self.even_mask_only)
+                    even_output = even_output_est / self.ensemble_num
 
-            # calculate loss
-            loss = self.calc_loss(decision=output_list[-self.iteration_num:], labels=cur_tx,
-                                  not_satisfied_list=not_satisfied_list)
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
+    def propagate(self, cur_rx, odd_output):
+        # even - check to variables
+        even_output_cur = self.even_layer.forward(odd_output, mask_only=self.even_mask_only)
+        # output layer
+        output = cur_rx + self.output_layer.forward(even_output_cur, mask_only=self.output_mask_only)
+        return output
 
     def _forward(self, x):
         """
@@ -93,40 +133,34 @@ class BayesianWBPDecoder(Trainer):
         """
         # initialize parameters
         x = x.float()
-        output_list = [0] * (self.iteration_num + 1)
+        output_list = [0] * (self.iteration_num)
         not_satisfied_list = [0] * (self.iteration_num - 1)
         not_satisfied = torch.arange(x.size(0), dtype=torch.long, device=DEVICE)
         output_list[-1] = torch.zeros_like(x)
 
         # equation 1 and 2 from "Learning To Decode ..", i==1,2 (iteration 1)
         even_output = self.input_layer.forward(x)
-        output_list[0] = torch.index_select(x, 0, not_satisfied) + self.multiloss_output_layer.forward(
-            even_output[not_satisfied], mask_only=self.multiloss_output_mask_only)
-        arm_original = [[] for _ in range(self.iteration_num)]
-        arm_tilde = [[] for _ in range(self.iteration_num)]
-        u_list = [[] for _ in range(self.iteration_num)]
-        kl_term = 0
-        ensemble_size = 5
+        output_list[0] = torch.index_select(x, 0, not_satisfied) + self.output_layer.forward(
+            even_output[not_satisfied], mask_only=self.output_layer)
 
         # now start iterating through all hidden layers i>2 (iteration 2 - Imax)
         for i in range(0, self.iteration_num - 1):
-            odd_output_not_satisfied_per_iter = 0
-            # odd - variables to check
-            for _ in range(ensemble_size):
-                odd_output_not_satisfied_per_iter += self.odd_layer.forward(
-                    torch.index_select(even_output, 0, not_satisfied),
-                    torch.index_select(x, 0, not_satisfied),
-                    llr_mask_only=self.odd_llr_mask_only)
-                u_list[i].append(self.odd_layer.u)
-                arm_original[i].append(self.odd_layer.arm_original)
-                arm_tilde[i].append(self.odd_layer.arm_tilde)
-            odd_output_not_satisfied = odd_output_not_satisfied_per_iter / ensemble_size
-            # even - check to variables
-            even_output[not_satisfied] = self.even_layer.forward(odd_output_not_satisfied,
-                                                                 mask_only=self.even_mask_only)
-            # output layer
-            output_not_satisfied = torch.index_select(x, 0, not_satisfied) + self.multiloss_output_layer.forward(
-                even_output[not_satisfied], mask_only=self.multiloss_output_mask_only)
+            output_not_satisfied, total_even_output_not_satisfied = 0, 0
+            for _ in range(self.ensemble_num):
+                # odd - variables to check
+                odd_output_not_satisfied = self.odd_layer.forward(torch.index_select(even_output, 0, not_satisfied),
+                                                                  torch.index_select(x, 0, not_satisfied),
+                                                                  llr_mask_only=self.odd_llr_mask_only)
+                # even - check to variables
+                even_output_not_satisfied = self.even_layer.forward(odd_output_not_satisfied,
+                                                                    mask_only=self.even_mask_only)
+                total_even_output_not_satisfied += even_output_not_satisfied
+                # output layer
+                output_not_satisfied += torch.index_select(x, 0, not_satisfied) + self.output_layer.forward(
+                    even_output_not_satisfied, mask_only=self.output_mask_only)
+
+            even_output[not_satisfied] = total_even_output_not_satisfied / self.ensemble_num
+            output_not_satisfied /= self.ensemble_num
             output_list[i + 1] = output_not_satisfied.clone()
             not_satisfied_list[i] = not_satisfied.clone()
 
@@ -135,23 +169,21 @@ class BayesianWBPDecoder(Trainer):
                 not_satisfied = syndrome_condition(not_satisfied, output_not_satisfied, self.code_pcm)
             if not_satisfied.size(0) == 0:
                 break
-        output_list[-1][not_satisfied] = x[not_satisfied] + self.output_layer.forward(even_output[not_satisfied],
-                                                                                      mask_only=self.output_mask_only)
         return output_list, not_satisfied_list
 
     def forward(self, x):
-        total_output_list = [[] for _ in range(self.iteration_num + 1)]
+        total_output_list = [[] for _ in range(self.iteration_num)]
         total_not_satisfied_list = [[] for _ in range(self.iteration_num - 1)]
-        MAX_SIZE = 10000
+        MAX_SIZE = 2500
         BATCH_SIZE = min(MAX_SIZE, x.shape[0])
         for i in range(x.shape[0] // BATCH_SIZE):
             output_list, not_satisfied_list = self._forward(x[i * BATCH_SIZE:(i + 1) * BATCH_SIZE])
-            for iter in range(self.iteration_num + 1):
+            for iter in range(self.iteration_num):
                 total_output_list[iter].append(output_list[iter])
             for iter in range(self.iteration_num - 1):
                 total_not_satisfied_list[iter].append(not_satisfied_list[iter])
 
-        for iter in range(self.iteration_num + 1):
+        for iter in range(self.iteration_num):
             total_output_list[iter] = torch.cat(total_output_list[iter])
         for iter in range(self.iteration_num - 1):
             total_not_satisfied_list[iter] = torch.cat(total_not_satisfied_list[iter])
