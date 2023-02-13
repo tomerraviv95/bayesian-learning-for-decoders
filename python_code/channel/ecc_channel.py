@@ -1,4 +1,3 @@
-import os
 from typing import Tuple
 
 import numpy as np
@@ -29,22 +28,20 @@ class ECCchannel:
         self._block_length = block_length
         self._pilots_length = pilots_length
         self._bits_generator = default_rng(seed=conf.seed)
-        self._bits_num = 63
-        self._parity_bits_num = 36
+        self._code_bits = conf.code_bits
+        self._info_bits = conf.info_bits
         self.tanner_graph_cycle_reduction = True
-        self.code_pcm, self.code_gm = load_code_parameters(self._bits_num, self._parity_bits_num,
-                                                           ECC_MATRICES_DIR,
-                                                           self.tanner_graph_cycle_reduction)
+        self.code_pcm, self.code_gm = load_code_parameters(self._code_bits, self._info_bits,
+                                                           ECC_MATRICES_DIR, self.tanner_graph_cycle_reduction)
         self.encoding = lambda u: (np.dot(u, self.code_gm) % 2)
         self.modulater = BPSKModulator
-        self.rate = float(self._parity_bits_num / self._bits_num)
+        self.rate = float(self._info_bits / self._code_bits)
         self.channel = AWGN
 
     def _transmit(self, snr: float) -> Tuple[np.ndarray, np.ndarray]:
         # generate word
-        tx_pilots = self._bits_generator.integers(0, 2, size=(self._pilots_length, self._parity_bits_num))
-        tx_data = self._bits_generator.integers(0, 2,
-                                                size=(self._block_length - self._pilots_length, self._parity_bits_num))
+        tx_pilots = self._bits_generator.integers(0, 2, size=(self._pilots_length, self._info_bits))
+        tx_data = self._bits_generator.integers(0, 2, size=(self._block_length - self._pilots_length, self._info_bits))
         tx = np.concatenate([tx_pilots, tx_data])
         # encoding
         x = self.encoding(tx)

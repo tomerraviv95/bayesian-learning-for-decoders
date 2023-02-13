@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from python_code import DEVICE
+from python_code import DEVICE, conf
 from python_code.channel.ecc_channel import ECCchannel
 
 
@@ -23,8 +23,8 @@ class ChannelModelDataset(Dataset):
     def get_snr_data(self, snr: float, database: list):
         if database is None:
             database = []
-        tx_full = np.empty((self.blocks_num, self.block_length, 63))
-        rx_full = np.empty((self.blocks_num, self.block_length, 63))
+        tx_full = np.empty((self.blocks_num, self.block_length, conf.code_bits))
+        rx_full = np.empty((self.blocks_num, self.block_length, conf.code_bits))
         # accumulate words until reaches desired number
         for index in range(self.blocks_num):
             tx, rx = self.channel_type.get_vectors(snr)

@@ -4,17 +4,17 @@ seed: 0 # run seed
 # channel
 channel_type: 'SISO' # Channel type values: ['SISO','SISO'].
 channel_model: 'AWGN' # Physical channel models: ['Cost2100','AWGN']
-decoder_type: 'model_based_bayesian_wbp' # 'wbp','seq_wbp','model_based_bayesian_wbp'
+decoder_type: 'wbp' # 'wbp','seq_wbp','model_based_bayesian_wbp'
 linear: True # channel linearity. Boolean value.
 snr: 6 # validation SNR value. values: float.
 modulation_type: 'BPSK' # ['BPSK','QPSK','EightPSK']
-code_bits: 63
-info_bits: 36
+code_bits: 127
+info_bits: 64
 iterations: 5
 
 # protocol
-block_length: 7000 # coherence block time, total size of pilot + data. values: int.
-pilot_size: 2000 # pilot bits
+block_length: 5000 # coherence block time, total size of pilot + data. values: int.
+pilot_size: 1000 # pilot bits
 blocks_num: 100 # number of validation frames. values: int.
 
 # online training hyperparameters
