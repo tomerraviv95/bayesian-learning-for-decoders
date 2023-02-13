@@ -2,7 +2,8 @@ import torch
 
 from python_code import DEVICE
 from python_code.decoders.trainer import Trainer
-from python_code.utils.constants import MAX_SIZE, EPOCHS, BATCH_SIZE
+from python_code.decoders.wbp.bp_nn import InputLayer, OddLayer, EvenLayer, OutputLayer
+from python_code.utils.constants import MAX_SIZE, EPOCHS, BATCH_SIZE, CLIPPING_VAL
 from python_code.utils.python_utils import syndrome_condition
 
 
@@ -10,6 +11,17 @@ class WBPDecoder(Trainer):
     def __init__(self):
         super().__init__()
         self.lr = 1e-3
+        self.input_layer = InputLayer(input_output_layer_size=self._code_bits, neurons=self.neurons,
+                                      code_pcm=self.code_pcm, clip_tanh=CLIPPING_VAL,
+                                      bits_num=self._code_bits)
+        self.odd_layer = OddLayer(clip_tanh=CLIPPING_VAL,
+                                  input_output_layer_size=self._code_bits,
+                                  neurons=self.neurons,
+                                  code_pcm=self.code_pcm)
+        self.even_layer = EvenLayer(CLIPPING_VAL, self.neurons, self.code_pcm)
+        self.output_layer = OutputLayer(neurons=self.neurons,
+                                        input_output_layer_size=self._code_bits,
+                                        code_pcm=self.code_pcm)
 
     def calc_loss(self, decision, labels, not_satisfied_list):
         loss = self.criterion(input=-decision[-1], target=labels)

@@ -11,6 +11,7 @@ class BayesianWBPDecoder(Trainer):
     def __init__(self):
         super().__init__()
         self.lr = 5e-4
+        self.output_mask_only = True
         self.input_layer = InputLayer(input_output_layer_size=self._code_bits, neurons=self.neurons,
                                       code_pcm=self.code_pcm, clip_tanh=CLIPPING_VAL,
                                       bits_num=self._code_bits)

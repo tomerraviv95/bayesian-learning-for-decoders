@@ -11,7 +11,7 @@ from dir_definitions import ECC_MATRICES_DIR
 from python_code import DEVICE, conf
 from python_code.channel.channel_dataset import ChannelModelDataset
 from python_code.utils.constants import TANNER_GRAPH_CYCLE_REDUCTION
-from python_code.utils.metrics import calculate_ber, calculate_reliability_and_ece
+from python_code.utils.metrics import calculate_ber
 from python_code.utils.python_utils import load_code_parameters
 
 random.seed(conf.seed)
@@ -31,7 +31,6 @@ class Trainer(nn.Module):
         super(Trainer, self).__init__()
         # initialize matrices, datasets and detector
         self._initialize_dataloader()
-        self._initialize_detector()
         self.softmax = torch.nn.Softmax(dim=1)  # Single symbol probability inference
         self.odd_llr_mask_only = True
         self.even_mask_only = True
@@ -48,12 +47,6 @@ class Trainer(nn.Module):
 
     def get_name(self):
         return self.__name__()
-
-    def _initialize_detector(self):
-        """
-        Every trainer must have some base detector seq_model
-        """
-        self.detector = None
 
     # calculate train loss
     def calc_loss(self, est: torch.Tensor, tx: torch.Tensor) -> torch.Tensor:
@@ -114,7 +107,6 @@ class Trainer(nn.Module):
         :return: list of ber per timestep
         """
         total_ber = []
-        correct_values_list, error_values_list = [], []
         # draw words for a given snr
         transmitted_words, received_words = self.channel_dataset.__getitem__(snr_list=[conf.snr])
         # detect sequentially
@@ -129,22 +121,13 @@ class Trainer(nn.Module):
                 # re-train the detector
                 self._online_training(tx_pilot, rx_pilot)
             # detect data part after training on the pilot part
-            # detected_word, (confident_bits, confidence_word) = self.forward(rx_data)
             decoded_words = self.forward(rx_data)
             # calculate accuracy
             ber = calculate_ber(decoded_words, tx_data)
-            # correct_values = confidence_word[torch.eq(target, confident_bits)].tolist()
-            # error_values = confidence_word[~torch.eq(target, confident_bits)].tolist()
             print(f'current: {block_ind, ber}')
             total_ber.append(ber)
-            # correct_values_list.append(correct_values)
-            # error_values_list.append(error_values)
-        # values = np.linspace(start=0, stop=1, num=9)
-        # avg_acc_per_bin, avg_confidence_per_bin, ece_measure, normalized_samples_per_bin = calculate_reliability_and_ece(
-        #     correct_values_list,
-        #     error_values_list, values)
+
         print(f'Final ser: {sum(total_ber) / len(total_ber)}')
-        # print(f"ECE:{ece_measure}")
         return total_ber, correct_values_list, error_values_list
 
     def run_train_loop(self, est: torch.Tensor, tx: torch.Tensor) -> float:
