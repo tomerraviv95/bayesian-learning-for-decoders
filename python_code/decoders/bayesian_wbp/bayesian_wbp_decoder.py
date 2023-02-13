@@ -174,7 +174,7 @@ class BayesianWBPDecoder(Trainer):
         return decoded_words
 
     def forward(self, x):
-        MAX_SIZE = 5500
+        MAX_SIZE = 1000
         BATCH_SIZE = min(MAX_SIZE, x.shape[0])
         total_decoded_words = []
         for i in range(x.shape[0] // BATCH_SIZE):

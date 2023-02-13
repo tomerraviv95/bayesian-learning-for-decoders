@@ -124,19 +124,12 @@ class WBPDecoder(Trainer):
         return output_list, not_satisfied_list
 
     def forward(self, x):
-        total_output_list = [[] for _ in range(self.iteration_num)]
-        total_not_satisfied_list = [[] for _ in range(self.iteration_num - 1)]
-        MAX_SIZE = 5000
+        MAX_SIZE = 1000
         BATCH_SIZE = min(MAX_SIZE, x.shape[0])
+        total_decoded_words = []
         for i in range(x.shape[0] // BATCH_SIZE):
             output_list, not_satisfied_list = self._forward(x[i * BATCH_SIZE:(i + 1) * BATCH_SIZE])
-            for iter in range(self.iteration_num):
-                total_output_list[iter].append(output_list[iter])
-            for iter in range(self.iteration_num - 1):
-                total_not_satisfied_list[iter].append(not_satisfied_list[iter])
-
-        for iter in range(self.iteration_num):
-            total_output_list[iter] = torch.cat(total_output_list[iter])
-        for iter in range(self.iteration_num - 1):
-            total_not_satisfied_list[iter] = torch.cat(total_not_satisfied_list[iter])
-        return total_output_list, total_not_satisfied_list
+            decoded_words = torch.round(torch.sigmoid(-output_list[-1]))
+            total_decoded_words.append(decoded_words)
+        total_decoded_words = torch.cat(total_decoded_words)
+        return total_decoded_words
