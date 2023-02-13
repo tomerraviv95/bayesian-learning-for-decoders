@@ -18,6 +18,7 @@ class ChannelModels(Enum):
 
 class DecoderType(Enum):
     wbp = 'wbp'
+    seq_wbp = 'seq_wbp'
     model_based_bayesian_wbp = 'model_based_bayesian_wbp'
 
 

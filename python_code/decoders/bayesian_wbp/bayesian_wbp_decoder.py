@@ -3,8 +3,8 @@ import torch
 
 from python_code import DEVICE
 from python_code.channel.ecc_channel import load_code_parameters
-from python_code.decoders.trainer import Trainer
 from python_code.decoders.bayesian_wbp.bayesian_bp_nn import InputLayer, EvenLayer, OddLayer, OutputLayer
+from python_code.decoders.trainer import Trainer
 
 
 def llr2bits(llr_vector):
@@ -102,13 +102,25 @@ class BayesianWBPDecoder(Trainer):
         even_output = self.input_layer.forward(x)
         output_list[0] = torch.index_select(x, 0, not_satisfied) + self.multiloss_output_layer.forward(
             even_output[not_satisfied], mask_only=self.multiloss_output_mask_only)
+        arm_original = [[] for _ in range(self.iteration_num)]
+        arm_tilde = [[] for _ in range(self.iteration_num)]
+        u_list = [[] for _ in range(self.iteration_num)]
+        kl_term = 0
+        ensemble_size = 5
 
         # now start iterating through all hidden layers i>2 (iteration 2 - Imax)
         for i in range(0, self.iteration_num - 1):
+            odd_output_not_satisfied_per_iter = 0
             # odd - variables to check
-            odd_output_not_satisfied = self.odd_layer.forward(torch.index_select(even_output, 0, not_satisfied),
-                                                              torch.index_select(x, 0, not_satisfied),
-                                                              llr_mask_only=self.odd_llr_mask_only)
+            for _ in range(ensemble_size):
+                odd_output_not_satisfied_per_iter += self.odd_layer.forward(
+                    torch.index_select(even_output, 0, not_satisfied),
+                    torch.index_select(x, 0, not_satisfied),
+                    llr_mask_only=self.odd_llr_mask_only)
+                u_list[i].append(self.odd_layer.u)
+                arm_original[i].append(self.odd_layer.arm_original)
+                arm_tilde[i].append(self.odd_layer.arm_tilde)
+            odd_output_not_satisfied = odd_output_not_satisfied_per_iter / ensemble_size
             # even - check to variables
             even_output[not_satisfied] = self.even_layer.forward(odd_output_not_satisfied,
                                                                  mask_only=self.even_mask_only)
