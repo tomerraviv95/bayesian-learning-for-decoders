@@ -4,7 +4,7 @@ seed: 0 # run seed
 # channel
 channel_type: 'SISO' # Channel type values: ['SISO','SISO'].
 channel_model: 'AWGN' # Physical channel models: ['Cost2100','AWGN']
-decoder_type: 'seq_wbp' # 'wbp','seq_wbp','model_based_bayesian_wbp'
+decoder_type: 'wbp' # 'wbp','seq_wbp','model_based_bayesian_wbp'
 linear: True # channel linearity. Boolean value.
 snr: 6 # validation SNR value. values: float.
 modulation_type: 'BPSK' # ['BPSK','QPSK','EightPSK']

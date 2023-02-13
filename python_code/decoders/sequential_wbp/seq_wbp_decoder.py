@@ -43,14 +43,11 @@ class SequentialWBPDecoder(Trainer):
         self.output_layer = OutputLayer(neurons=self.neurons,
                                         input_output_layer_size=self._bits_num,
                                         code_pcm=self.code_pcm)
-        self.odd_layer = torch.nn.ModuleList()
-        self.even_layer = torch.nn.ModuleList()
-        for i in range(self.iteration_num - 1):
-            self.odd_layer.append(OddLayer(clip_tanh=self.clip_tanh,
+        self.odd_layer = OddLayer(clip_tanh=self.clip_tanh,
                                            input_output_layer_size=self._bits_num,
                                            neurons=self.neurons,
-                                           code_pcm=self.code_pcm))
-            self.even_layer.append(EvenLayer(self.clip_tanh, self.neurons, self.code_pcm))
+                                           code_pcm=self.code_pcm)
+        self.even_layer = EvenLayer(self.clip_tanh, self.neurons, self.code_pcm)
         self.output_layer = OutputLayer(neurons=self.neurons,
                                         input_output_layer_size=self._bits_num,
                                         code_pcm=self.code_pcm)
@@ -79,24 +76,18 @@ class SequentialWBPDecoder(Trainer):
             even_output = self.input_layer.forward(cur_rx)
             for i in range(0, self.iteration_num - 1):
                 # odd - variables to check
-                odd_output = self.odd_layer[i].forward(even_output, cur_rx, llr_mask_only=self.odd_llr_mask_only)
+                odd_output = self.odd_layer.forward(even_output, cur_rx, llr_mask_only=self.odd_llr_mask_only)
                 # even - check to variables
-                even_output_cur = self.even_layer[i].forward(odd_output, mask_only=self.even_mask_only)
+                even_output_cur = self.even_layer.forward(odd_output, mask_only=self.even_mask_only)
                 # output layer
                 output = cur_rx + self.output_layer.forward(even_output_cur, mask_only=self.output_mask_only)
                 self.calc_loss(cur_tx, output)
                 with torch.no_grad():
                     # update the even_output to the next layer
                     # odd - variables to check
-                    odd_output = self.odd_layer[i].forward(even_output, cur_rx, llr_mask_only=self.odd_llr_mask_only)
+                    odd_output = self.odd_layer.forward(even_output, cur_rx, llr_mask_only=self.odd_llr_mask_only)
                     # even - check to variables
-                    even_output = self.even_layer[i].forward(odd_output, mask_only=self.even_mask_only)
-            # output layer
-            output = cur_rx + self.output_layer.forward(even_output_cur, mask_only=self.output_mask_only)
-            self.calc_loss(cur_tx, output)
-            # output = torch.index_select(cur_rx, 0, not_satisfied) + self.output_layer.forward(
-            #     even_output[not_satisfied], mask_only=self.output_mask_only)
-            # self.calc_loss(cur_tx, not_satisfied, output)
+                    even_output = self.even_layer.forward(odd_output, mask_only=self.even_mask_only)
 
     def _forward(self, x):
         """
@@ -119,11 +110,11 @@ class SequentialWBPDecoder(Trainer):
         # now start iterating through all hidden layers i>2 (iteration 2 - Imax)
         for i in range(0, self.iteration_num - 1):
             # odd - variables to check
-            odd_output_not_satisfied = self.odd_layer[i].forward(torch.index_select(even_output, 0, not_satisfied),
+            odd_output_not_satisfied = self.odd_layer.forward(torch.index_select(even_output, 0, not_satisfied),
                                                                  torch.index_select(x, 0, not_satisfied),
                                                                  llr_mask_only=self.odd_llr_mask_only)
             # even - check to variables
-            even_output[not_satisfied] = self.even_layer[i].forward(odd_output_not_satisfied,
+            even_output[not_satisfied] = self.even_layer.forward(odd_output_not_satisfied,
                                                                     mask_only=self.even_mask_only)
             # output layer
             output_not_satisfied = torch.index_select(x, 0, not_satisfied) + self.output_layer.forward(
