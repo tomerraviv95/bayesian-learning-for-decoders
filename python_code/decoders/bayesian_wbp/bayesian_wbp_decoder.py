@@ -27,7 +27,7 @@ EPOCHS = 200
 class BayesianWBPDecoder(Trainer):
     def __init__(self):
         super().__init__()
-        self.lr = 1e-3
+        self.lr = 5e-4
         self.clip_tanh = 20
         self.iteration_num = 5
         self._bits_num = 63
@@ -58,7 +58,7 @@ class BayesianWBPDecoder(Trainer):
         self.filter_in_iterations_eval = True
         self.output_mask_only = True
         self.ensemble_num = 5
-        self.kl_beta = 1e-3
+        self.kl_beta = 1e-4
         self.beta = 1e-2
 
     def calc_loss(self, cur_tx, output, arm_original, arm_tilde, u_list, dropout_logit, kl_term):
@@ -169,22 +169,16 @@ class BayesianWBPDecoder(Trainer):
                 not_satisfied = syndrome_condition(not_satisfied, output_not_satisfied, self.code_pcm)
             if not_satisfied.size(0) == 0:
                 break
-        return output_list, not_satisfied_list
+
+        decoded_words = torch.round(torch.sigmoid(-output_list[-1]))
+        return decoded_words
 
     def forward(self, x):
-        total_output_list = [[] for _ in range(self.iteration_num)]
-        total_not_satisfied_list = [[] for _ in range(self.iteration_num - 1)]
-        MAX_SIZE = 2500
+        MAX_SIZE = 5500
         BATCH_SIZE = min(MAX_SIZE, x.shape[0])
+        total_decoded_words = []
         for i in range(x.shape[0] // BATCH_SIZE):
-            output_list, not_satisfied_list = self._forward(x[i * BATCH_SIZE:(i + 1) * BATCH_SIZE])
-            for iter in range(self.iteration_num):
-                total_output_list[iter].append(output_list[iter])
-            for iter in range(self.iteration_num - 1):
-                total_not_satisfied_list[iter].append(not_satisfied_list[iter])
-
-        for iter in range(self.iteration_num):
-            total_output_list[iter] = torch.cat(total_output_list[iter])
-        for iter in range(self.iteration_num - 1):
-            total_not_satisfied_list[iter] = torch.cat(total_not_satisfied_list[iter])
-        return total_output_list, total_not_satisfied_list
+            decoded_words = self._forward(x[i * BATCH_SIZE:(i + 1) * BATCH_SIZE])
+            total_decoded_words.append(decoded_words)
+        total_decoded_words = torch.cat(total_decoded_words)
+        return total_decoded_words

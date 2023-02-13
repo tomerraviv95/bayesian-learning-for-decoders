@@ -115,9 +115,8 @@ class Trainer(nn.Module):
                 self._online_training(tx_pilot, rx_pilot)
             # detect data part after training on the pilot part
             # detected_word, (confident_bits, confidence_word) = self.forward(rx_data)
-            output_list, not_satisfied_list = self.forward(rx_data)
+            decoded_words = self.forward(rx_data)
             # calculate accuracy
-            decoded_words = torch.round(torch.sigmoid(-output_list[-1]))
             ber = calculate_ber(decoded_words, tx_data)
             # correct_values = confidence_word[torch.eq(target, confident_bits)].tolist()
             # error_values = confidence_word[~torch.eq(target, confident_bits)].tolist()
