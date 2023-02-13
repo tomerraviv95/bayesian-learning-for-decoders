@@ -1,7 +1,8 @@
 from enum import Enum
 
 HALF = 0.5
-
+CLIPPING_VAL = 20
+TANNER_GRAPH_CYCLE_REDUCTION = True
 
 class Phase(Enum):
     TRAIN = 'train'

@@ -4,31 +4,13 @@ from typing import Tuple
 import numpy as np
 from numpy.random import default_rng
 
+from dir_definitions import ECC_MATRICES_DIR
 from python_code import conf
 from python_code.channel.modulator import BPSKModulator
+from python_code.utils.python_utils import load_code_parameters
 
 
-def load_code_parameters(bits_num, parity_bits_num, ecc_mat_path, tanner_graph_cycle_reduction):
-    ecc_path = os.path.join(ecc_mat_path, '_'.join(['BCH', str(bits_num), str(parity_bits_num)]))
-    if os.path.isfile(ecc_path + '_PCM.npy'):
-        code_pcm = np.load(ecc_path + '_PCM.npy').astype(np.float32)
-        code_gm = np.load(ecc_path + '_GM.npy').astype(np.float32)
-    else:
-        raise Exception('Code ({},{}) matrices are not exist!!!'.format(bits_num, parity_bits_num))
-    if tanner_graph_cycle_reduction:
-        code_pcm = (np.load(ecc_path + '_PCM_CR.npy')).astype(np.float32)
-    if bits_num == 31:
-        t = 1
-    elif bits_num == 63:
-        t = 3 if parity_bits_num == 45 else 5
-    elif bits_num == 127:
-        t = 10 if parity_bits_num == 64 else 5
-    else:
-        raise Exception('Not implemented this code type')
-    return code_pcm, code_gm, t
-
-
-def AWGN(tx, SNR, R, random, use_llr=True):
+def AWGN(tx, SNR, R, random):
     """
         Input: tx - Transmitted codeword, SNR - dB, R - Code rate, use_llr - Return llr
         Output: rx - Codeword with AWGN noise
@@ -39,10 +21,7 @@ def AWGN(tx, SNR, R, random, use_llr=True):
 
     rx = tx + sigma * random.normal(0.0, 1.0, (row, col))
 
-    if use_llr:
-        return 2 * rx / (sigma ** 2)
-    else:
-        return rx
+    return 2 * rx / (sigma ** 2)
 
 
 class ECCchannel:
@@ -52,15 +31,13 @@ class ECCchannel:
         self._bits_generator = default_rng(seed=conf.seed)
         self._bits_num = 63
         self._parity_bits_num = 36
-        self._ecc_mat_path = r'C:/Projects/data-driven-ensembles/ECC_MATRIX'
         self.tanner_graph_cycle_reduction = True
-        self.code_pcm, self.code_gm, self.t = load_code_parameters(self._bits_num, self._parity_bits_num,
-                                                                   self._ecc_mat_path,
-                                                                   self.tanner_graph_cycle_reduction)
+        self.code_pcm, self.code_gm = load_code_parameters(self._bits_num, self._parity_bits_num,
+                                                           ECC_MATRICES_DIR,
+                                                           self.tanner_graph_cycle_reduction)
         self.encoding = lambda u: (np.dot(u, self.code_gm) % 2)
         self.modulater = BPSKModulator
         self.rate = float(self._parity_bits_num / self._bits_num)
-        self.use_llr = True
         self.channel = AWGN
 
     def _transmit(self, snr: float) -> Tuple[np.ndarray, np.ndarray]:
@@ -73,11 +50,8 @@ class ECCchannel:
         x = self.encoding(tx)
         # modulation
         s = self.modulater.modulate(x)
-        # modulation
-        # s = MODULATION_DICT[conf.modulation_type].modulate(tx.T)
-        # pass through channel
         # add channel noise
-        rx = self.channel(tx=s, SNR=snr, R=self.rate, use_llr=self.use_llr, random=np.random.RandomState(conf.seed))
+        rx = self.channel(tx=s, SNR=snr, R=self.rate, random=np.random.RandomState(conf.seed))
         return x, rx
 
     def get_vectors(self, snr: float) -> Tuple[np.ndarray, np.ndarray]:

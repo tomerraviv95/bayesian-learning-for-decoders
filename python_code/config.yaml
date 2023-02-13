@@ -8,6 +8,9 @@ decoder_type: 'model_based_bayesian_wbp' # 'wbp','seq_wbp','model_based_bayesian
 linear: True # channel linearity. Boolean value.
 snr: 6 # validation SNR value. values: float.
 modulation_type: 'BPSK' # ['BPSK','QPSK','EightPSK']
+code_bits: 63
+info_bits: 36
+iterations: 5
 
 # protocol
 block_length: 7000 # coherence block time, total size of pilot + data. values: int.

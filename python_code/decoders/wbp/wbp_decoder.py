@@ -1,10 +1,12 @@
 import numpy as np
 import torch
 
-from python_code import DEVICE
-from python_code.channel.ecc_channel import load_code_parameters
+from dir_definitions import ECC_MATRICES_DIR
+from python_code import DEVICE, conf
 from python_code.decoders.trainer import Trainer
 from python_code.decoders.wbp.bp_nn import InputLayer, EvenLayer, OddLayer, OutputLayer
+from python_code.utils.constants import CLIPPING_VAL, TANNER_GRAPH_CYCLE_REDUCTION
+from python_code.utils.python_utils import load_code_parameters
 
 
 def llr2bits(llr_vector):
@@ -27,29 +29,25 @@ class WBPDecoder(Trainer):
     def __init__(self):
         super().__init__()
         self.lr = 1e-3
-        self.clip_tanh = 20
-        self.iteration_num = 5
-        self._bits_num = 63
-        self._parity_bits_num = 36
-        self._ecc_mat_path = r'C:/Projects/data-driven-ensembles/ECC_MATRIX'
-        self.tanner_graph_cycle_reduction = True
-        self.code_pcm, self.code_gm, self.t = load_code_parameters(self._bits_num, self._parity_bits_num,
-                                                                   self._ecc_mat_path,
-                                                                   self.tanner_graph_cycle_reduction)
+        self.iteration_num = conf.iterations
+        self._code_bits = conf.code_bits
+        self._info_bits = conf.info_bits
+        self.code_pcm, self.code_gm = load_code_parameters(self._code_bits, self._info_bits,
+                                                           ECC_MATRICES_DIR, TANNER_GRAPH_CYCLE_REDUCTION)
         self.neurons = int(np.sum(self.code_pcm))
-        self.input_layer = InputLayer(input_output_layer_size=self._bits_num, neurons=self.neurons,
-                                      code_pcm=self.code_pcm, clip_tanh=self.clip_tanh,
-                                      bits_num=self._bits_num)
+        self.input_layer = InputLayer(input_output_layer_size=self._code_bits, neurons=self.neurons,
+                                      code_pcm=self.code_pcm, clip_tanh=CLIPPING_VAL,
+                                      bits_num=self._code_bits)
         self.output_layer = OutputLayer(neurons=self.neurons,
-                                        input_output_layer_size=self._bits_num,
+                                        input_output_layer_size=self._code_bits,
                                         code_pcm=self.code_pcm)
-        self.odd_layer = OddLayer(clip_tanh=self.clip_tanh,
-                                           input_output_layer_size=self._bits_num,
-                                           neurons=self.neurons,
-                                           code_pcm=self.code_pcm)
-        self.even_layer = EvenLayer(self.clip_tanh, self.neurons, self.code_pcm)
+        self.odd_layer = OddLayer(clip_tanh=CLIPPING_VAL,
+                                  input_output_layer_size=self._code_bits,
+                                  neurons=self.neurons,
+                                  code_pcm=self.code_pcm)
+        self.even_layer = EvenLayer(CLIPPING_VAL, self.neurons, self.code_pcm)
         self.output_layer = OutputLayer(neurons=self.neurons,
-                                        input_output_layer_size=self._bits_num,
+                                        input_output_layer_size=self._code_bits,
                                         code_pcm=self.code_pcm)
         self.odd_llr_mask_only = True
         self.even_mask_only = True
