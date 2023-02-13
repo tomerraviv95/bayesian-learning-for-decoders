@@ -13,6 +13,10 @@ class PlotType(Enum):
 def get_config(plot_type: PlotType) -> Tuple[List[Dict], list, str, str]:
     if plot_type == PlotType.BY_SNR_LONG_CODE:
         params_dicts = [
+            {'snr': 2, 'detector_type': DecoderType.bp.name},
+            {'snr': 4, 'detector_type': DecoderType.bp.name},
+            {'snr': 6, 'detector_type': DecoderType.bp.name},
+            {'snr': 8, 'detector_type': DecoderType.bp.name},
             {'snr': 2, 'detector_type': DecoderType.wbp.name},
             {'snr': 4, 'detector_type': DecoderType.wbp.name},
             {'snr': 6, 'detector_type': DecoderType.wbp.name},
@@ -26,6 +30,10 @@ def get_config(plot_type: PlotType) -> Tuple[List[Dict], list, str, str]:
         xlabel, ylabel = 'SNR', 'SER'
     elif plot_type == PlotType.BY_SNR_SHORT_CODE:
         params_dicts = [
+            {'snr': 2, 'detector_type': DecoderType.bp.name},
+            {'snr': 4, 'detector_type': DecoderType.bp.name},
+            {'snr': 6, 'detector_type': DecoderType.bp.name},
+            {'snr': 8, 'detector_type': DecoderType.bp.name},
             {'snr': 2, 'detector_type': DecoderType.wbp.name},
             {'snr': 4, 'detector_type': DecoderType.wbp.name},
             {'snr': 6, 'detector_type': DecoderType.wbp.name},

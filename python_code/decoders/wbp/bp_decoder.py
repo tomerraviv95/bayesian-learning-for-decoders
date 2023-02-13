@@ -12,6 +12,7 @@ class BPDecoder(Trainer):
         super().__init__()
         self.lr = None
         self.is_online_training = False
+        self.initialize_layers()
 
     def initialize_layers(self):
         self.input_layer = InputLayer(input_output_layer_size=self._code_bits, neurons=self.neurons,
