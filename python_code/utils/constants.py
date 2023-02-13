@@ -3,6 +3,9 @@ from enum import Enum
 HALF = 0.5
 CLIPPING_VAL = 20
 TANNER_GRAPH_CYCLE_REDUCTION = True
+MAX_SIZE = 1000
+EPOCHS = 200
+BATCH_SIZE = 64
 
 class Phase(Enum):
     TRAIN = 'train'

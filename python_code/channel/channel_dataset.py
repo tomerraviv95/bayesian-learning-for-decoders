@@ -40,7 +40,7 @@ class ChannelModelDataset(Dataset):
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             [executor.submit(self.get_snr_data, snr, database) for snr in snr_list]
         tx, rx = (np.concatenate(arrays) for arrays in zip(*database))
-        tx, rx = torch.Tensor(tx).to(device=DEVICE), torch.from_numpy(rx).to(device=DEVICE)
+        tx, rx = torch.Tensor(tx).to(device=DEVICE), torch.from_numpy(rx).to(device=DEVICE).float()
         return tx, rx
 
     def __len__(self):

@@ -7,9 +7,12 @@ from torch import nn
 from torch.nn import CrossEntropyLoss, MSELoss, BCEWithLogitsLoss
 from torch.optim import RMSprop, Adam, SGD
 
+from dir_definitions import ECC_MATRICES_DIR
 from python_code import DEVICE, conf
 from python_code.channel.channel_dataset import ChannelModelDataset
+from python_code.utils.constants import TANNER_GRAPH_CYCLE_REDUCTION
 from python_code.utils.metrics import calculate_ber, calculate_reliability_and_ece
+from python_code.utils.python_utils import load_code_parameters
 
 random.seed(conf.seed)
 torch.manual_seed(conf.seed)
@@ -30,6 +33,18 @@ class Trainer(nn.Module):
         self._initialize_dataloader()
         self._initialize_detector()
         self.softmax = torch.nn.Softmax(dim=1)  # Single symbol probability inference
+        self.odd_llr_mask_only = True
+        self.even_mask_only = True
+        self.multiloss_output_mask_only = True
+        self.filter_in_iterations_eval = True
+        self.output_mask_only = False
+        self.multi_loss_flag = True
+        self.iteration_num = conf.iterations
+        self._code_bits = conf.code_bits
+        self._info_bits = conf.info_bits
+        self.code_pcm, self.code_gm = load_code_parameters(self._code_bits, self._info_bits,
+                                                           ECC_MATRICES_DIR, TANNER_GRAPH_CYCLE_REDUCTION)
+        self.neurons = int(np.sum(self.code_pcm))
 
     def get_name(self):
         return self.__name__()

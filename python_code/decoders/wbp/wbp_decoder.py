@@ -1,60 +1,15 @@
-import numpy as np
 import torch
 
-from dir_definitions import ECC_MATRICES_DIR
-from python_code import DEVICE, conf
+from python_code import DEVICE
 from python_code.decoders.trainer import Trainer
-from python_code.decoders.wbp.bp_nn import InputLayer, EvenLayer, OddLayer, OutputLayer
-from python_code.utils.constants import CLIPPING_VAL, TANNER_GRAPH_CYCLE_REDUCTION
-from python_code.utils.python_utils import load_code_parameters
-
-
-def llr2bits(llr_vector):
-    return torch.round(torch.sigmoid(-llr_vector))
-
-
-def syndrome_condition(unsatisfied, llr_words, code_parityCheckMatrix):
-    words = llr2bits(llr_words).float()
-    syndrome = torch.fmod(torch.mm(words,
-                                   torch.tensor(code_parityCheckMatrix.T).float().to(device=DEVICE)), 2)
-    equal_flag = ~torch.eq(torch.sum(torch.abs(syndrome), dim=1), torch.FloatTensor(1).fill_(0).to(device=DEVICE))
-    new_unsatisfied = unsatisfied[equal_flag]
-    return new_unsatisfied
-
-
-EPOCHS = 200
+from python_code.utils.constants import MAX_SIZE, EPOCHS, BATCH_SIZE
+from python_code.utils.python_utils import syndrome_condition
 
 
 class WBPDecoder(Trainer):
     def __init__(self):
         super().__init__()
         self.lr = 1e-3
-        self.iteration_num = conf.iterations
-        self._code_bits = conf.code_bits
-        self._info_bits = conf.info_bits
-        self.code_pcm, self.code_gm = load_code_parameters(self._code_bits, self._info_bits,
-                                                           ECC_MATRICES_DIR, TANNER_GRAPH_CYCLE_REDUCTION)
-        self.neurons = int(np.sum(self.code_pcm))
-        self.input_layer = InputLayer(input_output_layer_size=self._code_bits, neurons=self.neurons,
-                                      code_pcm=self.code_pcm, clip_tanh=CLIPPING_VAL,
-                                      bits_num=self._code_bits)
-        self.output_layer = OutputLayer(neurons=self.neurons,
-                                        input_output_layer_size=self._code_bits,
-                                        code_pcm=self.code_pcm)
-        self.odd_layer = OddLayer(clip_tanh=CLIPPING_VAL,
-                                  input_output_layer_size=self._code_bits,
-                                  neurons=self.neurons,
-                                  code_pcm=self.code_pcm)
-        self.even_layer = EvenLayer(CLIPPING_VAL, self.neurons, self.code_pcm)
-        self.output_layer = OutputLayer(neurons=self.neurons,
-                                        input_output_layer_size=self._code_bits,
-                                        code_pcm=self.code_pcm)
-        self.odd_llr_mask_only = True
-        self.even_mask_only = True
-        self.multiloss_output_mask_only = True
-        self.filter_in_iterations_eval = True
-        self.output_mask_only = False
-        self.multi_loss_flag = True
 
     def calc_loss(self, decision, labels, not_satisfied_list):
         loss = self.criterion(input=-decision[-1], target=labels)
@@ -69,7 +24,6 @@ class WBPDecoder(Trainer):
 
     def _online_training(self, tx: torch.Tensor, rx: torch.Tensor):
         self.deep_learning_setup(self.lr)
-        BATCH_SIZE = 64
         for _ in range(EPOCHS):
             # select 5 samples randomly
             idx = torch.randperm(tx.shape[0])[:BATCH_SIZE]
@@ -89,7 +43,6 @@ class WBPDecoder(Trainer):
         :return: decoded word [batch_size,N]
         """
         # initialize parameters
-        x = x.float()
         output_list = [0] * self.iteration_num
         not_satisfied_list = [0] * (self.iteration_num - 1)
         not_satisfied = torch.arange(x.size(0), dtype=torch.long, device=DEVICE)
@@ -122,11 +75,10 @@ class WBPDecoder(Trainer):
         return output_list, not_satisfied_list
 
     def forward(self, x):
-        MAX_SIZE = 1000
-        BATCH_SIZE = min(MAX_SIZE, x.shape[0])
+        batch_size = min(MAX_SIZE, x.shape[0])
         total_decoded_words = []
-        for i in range(x.shape[0] // BATCH_SIZE):
-            output_list, not_satisfied_list = self._forward(x[i * BATCH_SIZE:(i + 1) * BATCH_SIZE])
+        for i in range(x.shape[0] // batch_size):
+            output_list, not_satisfied_list = self._forward(x[i * batch_size:(i + 1) * batch_size])
             decoded_words = torch.round(torch.sigmoid(-output_list[-1]))
             total_decoded_words.append(decoded_words)
         total_decoded_words = torch.cat(total_decoded_words)
