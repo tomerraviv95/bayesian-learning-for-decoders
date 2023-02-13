@@ -12,12 +12,14 @@ class BayesianWBPDecoder(Trainer):
         super().__init__()
         self.lr = 5e-4
         self.output_mask_only = True
+        self.ensemble_num = 5
+        self.kl_beta = 1e-4
+        self.beta = 1e-2
+
+    def initialize_layers(self):
         self.input_layer = InputLayer(input_output_layer_size=self._code_bits, neurons=self.neurons,
                                       code_pcm=self.code_pcm, clip_tanh=CLIPPING_VAL,
                                       bits_num=self._code_bits)
-        self.output_layer = OutputLayer(neurons=self.neurons,
-                                        input_output_layer_size=self._code_bits,
-                                        code_pcm=self.code_pcm)
         self.odd_layer = OddLayer(clip_tanh=CLIPPING_VAL,
                                   input_output_layer_size=self._code_bits,
                                   neurons=self.neurons,
@@ -26,9 +28,6 @@ class BayesianWBPDecoder(Trainer):
         self.output_layer = OutputLayer(neurons=self.neurons,
                                         input_output_layer_size=self._code_bits,
                                         code_pcm=self.code_pcm)
-        self.ensemble_num = 5
-        self.kl_beta = 1e-4
-        self.beta = 1e-2
 
     def calc_loss(self, cur_tx, output, arm_original, arm_tilde, u_list, dropout_logit, kl_term):
         # calculate loss
@@ -51,6 +50,7 @@ class BayesianWBPDecoder(Trainer):
         self.optimizer.step()
 
     def _online_training(self, tx: torch.Tensor, rx: torch.Tensor):
+        self.initialize_layers()
         self.deep_learning_setup(self.lr)
         for e in range(EPOCHS):
             # select samples randomly

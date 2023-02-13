@@ -12,6 +12,8 @@ class SequentialWBPDecoder(Trainer):
         super().__init__()
         self.lr = 1e-3
         self.output_mask_only = True
+
+    def initialize_layers(self):
         self.input_layer = InputLayer(input_output_layer_size=self._code_bits, neurons=self.neurons,
                                       code_pcm=self.code_pcm, clip_tanh=CLIPPING_VAL,
                                       bits_num=self._code_bits)
@@ -32,6 +34,7 @@ class SequentialWBPDecoder(Trainer):
         self.optimizer.step()
 
     def _online_training(self, tx: torch.Tensor, rx: torch.Tensor):
+        self.initialize_layers()
         self.deep_learning_setup(self.lr)
         for e in range(EPOCHS):
             # select samples randomly

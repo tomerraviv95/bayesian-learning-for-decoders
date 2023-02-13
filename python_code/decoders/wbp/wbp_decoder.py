@@ -11,6 +11,8 @@ class WBPDecoder(Trainer):
     def __init__(self):
         super().__init__()
         self.lr = 1e-3
+
+    def initialize_layers(self):
         self.input_layer = InputLayer(input_output_layer_size=self._code_bits, neurons=self.neurons,
                                       code_pcm=self.code_pcm, clip_tanh=CLIPPING_VAL,
                                       bits_num=self._code_bits)
@@ -22,6 +24,7 @@ class WBPDecoder(Trainer):
         self.output_layer = OutputLayer(neurons=self.neurons,
                                         input_output_layer_size=self._code_bits,
                                         code_pcm=self.code_pcm)
+
 
     def calc_loss(self, decision, labels, not_satisfied_list):
         loss = self.criterion(input=-decision[-1], target=labels)
@@ -35,6 +38,7 @@ class WBPDecoder(Trainer):
         return loss
 
     def _online_training(self, tx: torch.Tensor, rx: torch.Tensor):
+        self.initialize_layers()
         self.deep_learning_setup(self.lr)
         for _ in range(EPOCHS):
             # select 5 samples randomly
