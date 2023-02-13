@@ -4,7 +4,7 @@ import torch
 from python_code.utils.constants import HALF
 
 
-class BPSKModulator:
+class BPSKModulation:
     @staticmethod
     def modulate(c: np.ndarray) -> np.ndarray:
         """

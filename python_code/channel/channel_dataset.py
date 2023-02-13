@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import Dataset
 
 from python_code import DEVICE, conf
-from python_code.channel.ecc_channel import ECCchannel
+from python_code.channel.ecc_channel import EccChannel
 
 
 class ChannelModelDataset(Dataset):
@@ -18,7 +18,7 @@ class ChannelModelDataset(Dataset):
     def __init__(self, block_length: int, pilots_length: int, blocks_num: int):
         self.blocks_num = blocks_num
         self.block_length = block_length
-        self.channel_type = ECCchannel(block_length, pilots_length)
+        self.channel_type = EccChannel(block_length, pilots_length)
 
     def get_snr_data(self, snr: float, database: list):
         if database is None:

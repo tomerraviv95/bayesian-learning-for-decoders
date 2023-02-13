@@ -128,7 +128,7 @@ class Trainer(nn.Module):
             total_ber.append(ber)
 
         print(f'Final ser: {sum(total_ber) / len(total_ber)}')
-        return total_ber, correct_values_list, error_values_list
+        return total_ber
 
     def run_train_loop(self, est: torch.Tensor, tx: torch.Tensor) -> float:
         # calculate loss
