@@ -3,8 +3,11 @@ import torch
 from python_code import DEVICE
 from python_code.decoders.bayesian_wbp.bayesian_bp_nn import InputLayer, EvenLayer, OddLayer, OutputLayer
 from python_code.decoders.trainer import Trainer
-from python_code.utils.constants import HALF, CLIPPING_VAL, MAX_SIZE, EPOCHS, BATCH_SIZE
+from python_code.utils.constants import HALF, CLIPPING_VAL, MAX_SIZE
 from python_code.utils.python_utils import syndrome_condition
+
+EPOCHS = 300
+BATCH_SIZE = 128
 
 
 class BayesianWBPDecoder(Trainer):

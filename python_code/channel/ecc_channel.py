@@ -25,18 +25,25 @@ class EccChannel:
         self.channel = AWGNChannel
         self.rate = float(self._info_bits / self._code_bits)
 
-    def _transmit(self, snr: float) -> Tuple[np.ndarray, np.ndarray]:
-        # generate word
-        tx_pilots = self._bits_generator.integers(0, 1, size=(self._pilots_length, self._info_bits))
-        tx_data = self._bits_generator.integers(0, 2, size=(self._block_length - self._pilots_length, self._info_bits))
-        tx = np.concatenate([tx_pilots, tx_data])
-        # encoding
-        x = self.encoding(tx)
-        # modulation
-        s = self.modulation.modulate(x)
-        # add channel noise
-        rx = self.channel(tx=s, SNR=snr, R=self.rate, random=np.random.RandomState(conf.seed))
+    def _transmit(self, val_snr: float) -> Tuple[np.ndarray, np.ndarray]:
+        rx_pilots, x_pilots = [], []
+        snrs_num = conf.train_snr_end - conf.train_snr_start + 1
+        for train_snr in range(conf.train_snr_start, conf.train_snr_end + 1):
+            cur_rx_pilots, cur_x_pilots = self._transmit_single(train_snr, self._pilots_length // snrs_num)
+            rx_pilots.append(cur_rx_pilots)
+            x_pilots.append(cur_x_pilots)
+        rx_pilots, x_pilots = np.concatenate(rx_pilots), np.concatenate(x_pilots)
+        rx_data, x_data = self._transmit_single(val_snr, self._block_length - self._pilots_length)
+        x = np.concatenate([x_pilots, x_data])
+        rx = np.concatenate([rx_pilots, rx_data])
         return x, rx
+
+    def _transmit_single(self, snr, size):
+        tx = self._bits_generator.integers(0, 2, size=(size, self._info_bits))
+        x = self.encoding(tx)
+        s = self.modulation.modulate(x)
+        rx = self.channel(tx=s, SNR=snr, R=self.rate, random=np.random.RandomState(conf.seed))
+        return rx, x
 
     def get_vectors(self, snr: float) -> Tuple[np.ndarray, np.ndarray]:
         # get channel values

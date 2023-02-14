@@ -3,8 +3,11 @@ import torch
 from python_code import DEVICE
 from python_code.decoders.sequential_wbp.seq_bp_nn import InputLayer, OddLayer, EvenLayer, OutputLayer
 from python_code.decoders.trainer import Trainer
-from python_code.utils.constants import MAX_SIZE, EPOCHS, BATCH_SIZE, CLIPPING_VAL
+from python_code.utils.constants import MAX_SIZE, CLIPPING_VAL
 from python_code.utils.python_utils import syndrome_condition
+
+EPOCHS = 4000
+BATCH_SIZE = 128
 
 
 class SequentialWBPDecoder(Trainer):

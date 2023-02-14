@@ -3,16 +3,18 @@ seed: 0 # run seed
 
 # channel
 channel_model: 'AWGN' # Physical channel models: ['AWGN']
-decoder_type: 'wbp' # 'wbp','bp','seq_wbp','model_based_bayesian_wbp'
+decoder_type: 'model_based_bayesian_wbp' # 'wbp','bp','seq_wbp','model_based_bayesian_wbp'
 snr: 6 # validation SNR value. values: float.
-code_bits: 63
-info_bits: 36
+train_snr_start: 4
+train_snr_end: 7
+code_bits: 127
+info_bits: 64
 iterations: 5
 
 # protocol
-block_length: 6000 # coherence block time, total size of pilot + data. values: int.
-pilot_size: 2000 # pilot bits
-blocks_num: 50 # number of validation frames. values: int.
+block_length: 5200 # coherence block time, total size of pilot + data. values: int.
+pilot_size: 3200 # pilot bits
+blocks_num: 20 # number of validation frames. values: int.
 
 # online training hyperparameters
 loss_type: 'BCEWithLogits' # Loss type. values: 'BCEWithLogits','CrossEntropy','MSE'.

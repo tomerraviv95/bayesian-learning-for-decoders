@@ -3,8 +3,11 @@ import torch
 from python_code import DEVICE
 from python_code.decoders.trainer import Trainer
 from python_code.decoders.wbp.bp_nn import InputLayer, OddLayer, EvenLayer, OutputLayer
-from python_code.utils.constants import MAX_SIZE, EPOCHS, BATCH_SIZE, CLIPPING_VAL
+from python_code.utils.constants import MAX_SIZE, CLIPPING_VAL
 from python_code.utils.python_utils import syndrome_condition
+
+EPOCHS = 4000
+BATCH_SIZE = 128
 
 
 class WBPDecoder(Trainer):
@@ -12,7 +15,6 @@ class WBPDecoder(Trainer):
         super().__init__()
         self.lr = 1e-3
         self.is_online_training = True
-        self.initialize_layers()
 
     def __str__(self):
         return 'WBP Decoder'
@@ -30,7 +32,6 @@ class WBPDecoder(Trainer):
                                         input_output_layer_size=self._code_bits,
                                         code_pcm=self.code_pcm)
 
-
     def calc_loss(self, decision, labels, not_satisfied_list):
         loss = self.criterion(input=-decision[-1], target=labels)
         if self.multi_loss_flag:
@@ -43,7 +44,7 @@ class WBPDecoder(Trainer):
         return loss
 
     def _online_training(self, tx: torch.Tensor, rx: torch.Tensor):
-
+        self.initialize_layers()
         self.deep_learning_setup(self.lr)
         for _ in range(EPOCHS):
             # select 5 samples randomly
