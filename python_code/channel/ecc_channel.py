@@ -27,7 +27,7 @@ class EccChannel:
 
     def _transmit(self, snr: float) -> Tuple[np.ndarray, np.ndarray]:
         # generate word
-        tx_pilots = self._bits_generator.integers(0, 2, size=(self._pilots_length, self._info_bits))
+        tx_pilots = self._bits_generator.integers(0, 1, size=(self._pilots_length, self._info_bits))
         tx_data = self._bits_generator.integers(0, 2, size=(self._block_length - self._pilots_length, self._info_bits))
         tx = np.concatenate([tx_pilots, tx_data])
         # encoding
