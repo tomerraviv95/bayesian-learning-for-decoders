@@ -10,7 +10,7 @@ iterations: 5
 train_snr_start: 4
 train_snr_end: 7
 train_block_size: 500 # coherence block time, total size of pilot + data. values: int.
-train_blocks_num: 30 # number of train frames. values: int.
+train_blocks_num: 1 # number of train frames. values: int.
 loss_type: 'BCEWithLogits' # Loss type. values: 'BCEWithLogits','CrossEntropy','MSE'.
 optimizer_type: 'Adam' # Optimizer type. values: 'Adam','RMSprop','SGD'.
 
