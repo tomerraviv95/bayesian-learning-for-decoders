@@ -121,7 +121,7 @@ class Trainer(nn.Module):
             for block_ind in range(conf.val_blocks_num):
                 tx, rx = self.val_channel_dataset.__getitem__(snr_list=[conf.val_snr])
                 # detect data part after training on the pilot part
-                output_list, not_satisfied_list = self.forward(rx, phase=Phase.VAL)
+                output_list = self.forward(rx, phase=Phase.VAL)
                 decoded_words = torch.round(torch.sigmoid(-output_list[-1]))
                 # calculate accuracy
                 ber = calculate_ber(decoded_words, tx)
