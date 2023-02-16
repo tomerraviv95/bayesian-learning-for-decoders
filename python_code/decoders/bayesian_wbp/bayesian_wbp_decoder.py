@@ -1,25 +1,26 @@
 import torch
 
 from python_code import DEVICE
-from python_code.decoders.bp_nn import InputLayer, EvenLayer, OutputLayer
 from python_code.decoders.bayesian_wbp.bayesian_bp_nn import BayesianOddLayer
+from python_code.decoders.bp_nn import InputLayer, EvenLayer, OutputLayer
 from python_code.decoders.trainer import Trainer
-from python_code.utils.constants import HALF, CLIPPING_VAL, MAX_SIZE
+from python_code.utils.constants import HALF, CLIPPING_VAL
 from python_code.utils.python_utils import syndrome_condition
 
 EPOCHS = 300
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 
 
 class BayesianWBPDecoder(Trainer):
     def __init__(self):
         super().__init__()
-        self.lr = 5e-4
+        self.lr = 1e-3
         self.output_mask_only = True
         self.ensemble_num = 5
         self.kl_beta = 1e-4
         self.beta = 1e-2
-        self.is_online_training = True
+        self.initialize_layers()
+        self.deep_learning_setup(self.lr)
 
     def __str__(self):
         return 'Bayesian WBP Decoder'
@@ -58,8 +59,6 @@ class BayesianWBPDecoder(Trainer):
         self.optimizer.step()
 
     def _online_training(self, tx: torch.Tensor, rx: torch.Tensor):
-        self.initialize_layers()
-        self.deep_learning_setup(self.lr)
         for e in range(EPOCHS):
             # select samples randomly
             idx = torch.randperm(tx.shape[0])[:BATCH_SIZE]
@@ -100,7 +99,7 @@ class BayesianWBPDecoder(Trainer):
         output = cur_rx + self.output_layer.forward(even_output_cur, mask_only=self.output_mask_only)
         return output
 
-    def _forward(self, x):
+    def forward(self, x):
         """
         compute forward pass in the network
         :param x: [batch_size,N]
@@ -143,15 +142,4 @@ class BayesianWBPDecoder(Trainer):
                 not_satisfied = syndrome_condition(not_satisfied, output_not_satisfied, self.code_pcm)
             if not_satisfied.size(0) == 0:
                 break
-
-        decoded_words = torch.round(torch.sigmoid(-output_list[-1]))
-        return decoded_words
-
-    def forward(self, x):
-        batch_size = min(MAX_SIZE, x.shape[0])
-        total_decoded_words = []
-        for i in range(x.shape[0] // batch_size):
-            decoded_words = self._forward(x[i * batch_size:(i + 1) * batch_size])
-            total_decoded_words.append(decoded_words)
-        total_decoded_words = torch.cat(total_decoded_words)
-        return total_decoded_words
+        return output_list, not_satisfied_list

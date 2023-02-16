@@ -99,7 +99,7 @@ class Trainer(nn.Module):
         """
         pass
 
-    def train_and_eval(self):
+    def train_and_eval(self) -> List[float]:
         for block_ind in range(conf.train_blocks_num):
             print('*' * 20)
             print(f'Training on block {block_ind}')
@@ -109,7 +109,8 @@ class Trainer(nn.Module):
             # train the decoder
             self._online_training(tx, rx)
             print('Evaluating...')
-            self.eval()
+            ber = self.eval()
+        return ber
 
     def eval(self) -> List[float]:
         """
@@ -117,14 +118,15 @@ class Trainer(nn.Module):
         :return: list of ber per block
         """
         total_ber = []
-        for block_ind in range(conf.val_blocks_num):
-            tx, rx = self.val_channel_dataset.__getitem__(snr_list=[conf.val_snr])
-            # detect data part after training on the pilot part
-            output_list, not_satisfied_list = self.forward(rx)
-            decoded_words = torch.round(torch.sigmoid(-output_list[-1]))
-            # calculate accuracy
-            ber = calculate_ber(decoded_words, tx)
-            total_ber.append(ber)
+        with torch.no_grad():
+            for block_ind in range(conf.val_blocks_num):
+                tx, rx = self.val_channel_dataset.__getitem__(snr_list=[conf.val_snr])
+                # detect data part after training on the pilot part
+                output_list, not_satisfied_list = self.forward(rx)
+                decoded_words = torch.round(torch.sigmoid(-output_list[-1]))
+                # calculate accuracy
+                ber = calculate_ber(decoded_words, tx)
+                total_ber.append(ber)
         print(f'Final ser: {sum(total_ber) / len(total_ber)}')
         return total_ber
 
