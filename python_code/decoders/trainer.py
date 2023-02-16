@@ -108,10 +108,10 @@ class Trainer(nn.Module):
             # train the decoder
             self._online_training(tx, rx)
             print('Evaluating...')
-            ber = self.eval()
-        return ber
+            avg_ber = self.eval()
+        return avg_ber
 
-    def eval(self) -> List[float]:
+    def eval(self) -> float:
         """
         The evaluation running on multiple pairs of transmitted and received blocks.
         :return: list of ber per block
@@ -126,8 +126,9 @@ class Trainer(nn.Module):
                 # calculate accuracy
                 ber = calculate_ber(decoded_words, tx)
                 total_ber.append(ber)
-        print(f'Final ser: {sum(total_ber) / len(total_ber)}')
-        return total_ber
+        avg_ber = sum(total_ber) / len(total_ber)
+        print(f'Final ser: {avg_ber}')
+        return avg_ber
 
     def run_train_loop(self, est: torch.Tensor, tx: torch.Tensor) -> float:
         # calculate loss

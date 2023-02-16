@@ -146,7 +146,6 @@ def get_to_plot_values_dict(all_curves: List[Tuple[float, str]], names: List[str
         for cur_name, ser in all_curves:
             if cur_name != method_name:
                 continue
-            mean_ser = np.mean(np.array(list(chain.from_iterable(ser))))
-            values_to_plot.append(mean_ser)
+            values_to_plot.append(ser)
         values_to_plot_dict[method_name] = values_to_plot
     return cur_name, values_to_plot_dict
