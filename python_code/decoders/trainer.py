@@ -84,9 +84,8 @@ class Trainer(nn.Module):
         """
         Sets up the data loader - a generator from which we draw batches, in iterations
         """
-        self.channel_dataset = ChannelModelDataset(block_length=conf.block_length,
-                                                   pilots_length=conf.pilot_size,
-                                                   blocks_num=conf.blocks_num)
+        self.train_channel_dataset = ChannelModelDataset(block_size=conf.train_block_size)
+        self.val_channel_dataset = ChannelModelDataset(block_size=conf.val_block_size)
 
     def _online_training(self, tx: torch.Tensor, rx: torch.Tensor):
         """
@@ -100,33 +99,32 @@ class Trainer(nn.Module):
         """
         pass
 
-    def evaluate(self) -> Tuple[List[float], List[float], List[float]]:
+    def train_and_eval(self):
+        for block_ind in range(conf.train_blocks_num):
+            print(f'Training on block {block_ind}')
+            # draw words from channel
+            tx, rx = self.channel_dataset.__getitem__(
+                snr_list=list(range(conf.train_snr_start, conf.train_snr_end + 1)))
+            # train the decoder
+            self._online_training(tx, rx)
+            print('Evaluating...')
+            self.eval()
+
+    def eval(self) -> List[float]:
         """
-        The online evaluation run. Main function for running the experiments of sequential transmission of pilots and
-        data blocks for the paper.
-        :return: list of ber per timestep
+        The evaluation running on multiple pairs of transmitted and received blocks.
+        :return: list of ber per block
         """
         total_ber = []
-        # draw words for a given snr
-        transmitted_words, received_words = self.channel_dataset.__getitem__(snr_list=[conf.snr])
-        # detect sequentially
-        for block_ind in range(conf.blocks_num):
+        for block_ind in range(conf.val_blocks_num):
             print('*' * 20)
-            # get current word and channel
-            tx, rx = transmitted_words[block_ind], received_words[block_ind]
-            # split words into data and pilot part
-            tx_pilot, tx_data = tx[:conf.pilot_size], tx[conf.pilot_size:]
-            rx_pilot, rx_data = rx[:conf.pilot_size], rx[conf.pilot_size:]
-            if self.is_online_training:
-                # re-train the detector
-                self._online_training(tx_pilot, rx_pilot)
+            tx, rx = self.channel_dataset.__getitem__(snr_list=[conf.val_snr])
             # detect data part after training on the pilot part
-            decoded_words = self.forward(rx_data)
+            decoded_words = self.forward(rx)
             # calculate accuracy
-            ber = calculate_ber(decoded_words, tx_data)
+            ber = calculate_ber(decoded_words, tx)
             print(f'current: {block_ind, ber}')
             total_ber.append(ber)
-
         print(f'Final ser: {sum(total_ber) / len(total_ber)}')
         return total_ber
 

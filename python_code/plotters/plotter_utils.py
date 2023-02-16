@@ -92,7 +92,7 @@ def get_all_plots(dec: Trainer, run_over: bool, method_name: str, trial=None):
     else:
         # otherwise - run again
         print("Calculating fresh")
-        ber_total = dec.evaluate()
+        ber_total = dec.train_and_eval()
         save_pkl(plots_path, ber_total, type='ber')
     return ber_total
 

@@ -17,4 +17,4 @@ CHANNEL_TYPE_TO_TRAINER_DICT = {DecoderType.bp.name: BPDecoder,
 if __name__ == '__main__':
     trainer = CHANNEL_TYPE_TO_TRAINER_DICT[conf.decoder_type]()
     print(trainer)
-    trainer.evaluate()
+    trainer.train_and_eval()

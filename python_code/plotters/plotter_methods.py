@@ -4,7 +4,7 @@ from typing import Tuple, List, Dict, Union
 
 from dir_definitions import CONFIG_RUNS_DIR
 from python_code.decoders.trainer import Trainer
-from python_code.evaluate import CHANNEL_TYPE_TO_TRAINER_DICT
+from python_code.run import CHANNEL_TYPE_TO_TRAINER_DICT
 from python_code.plotters.plotter_utils import get_all_plots
 from python_code.utils.config_singleton import Config
 
