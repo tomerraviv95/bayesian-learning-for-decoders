@@ -3,11 +3,11 @@ import torch
 from python_code import DEVICE
 from python_code.decoders.bp_nn import InputLayer, OddLayer, EvenLayer, OutputLayer
 from python_code.decoders.trainer import Trainer
-from python_code.utils.constants import MAX_SIZE, CLIPPING_VAL
+from python_code.utils.constants import CLIPPING_VAL
 from python_code.utils.python_utils import syndrome_condition
 
 EPOCHS = 500
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 
 
 class SequentialWBPDecoder(Trainer):
@@ -15,7 +15,8 @@ class SequentialWBPDecoder(Trainer):
         super().__init__()
         self.lr = 1e-3
         self.output_mask_only = True
-        self.is_online_training = True
+        self.initialize_layers()
+        self.deep_learning_setup(self.lr)
 
     def __str__(self):
         return 'Sequential WBP Decoder'
@@ -41,8 +42,6 @@ class SequentialWBPDecoder(Trainer):
         self.optimizer.step()
 
     def _online_training(self, tx: torch.Tensor, rx: torch.Tensor):
-        self.initialize_layers()
-        self.deep_learning_setup(self.lr)
         for e in range(EPOCHS):
             # select samples randomly
             idx = torch.randperm(tx.shape[0])[:BATCH_SIZE]
@@ -64,17 +63,16 @@ class SequentialWBPDecoder(Trainer):
                     # even - check to variables
                     even_output = self.even_layer.forward(odd_output, mask_only=self.even_mask_only)
 
-    def _forward(self, x):
+    def forward(self, x):
         """
         compute forward pass in the network
         :param x: [batch_size,N]
         :return: decoded word [batch_size,N]
         """
         # initialize parameters
-        output_list = [0] * (self.iteration_num)
+        output_list = [0] * self.iteration_num
         not_satisfied_list = [0] * (self.iteration_num - 1)
         not_satisfied = torch.arange(x.size(0), dtype=torch.long, device=DEVICE)
-        output_list[-1] = torch.zeros_like(x)
 
         # equation 1 and 2 from "Learning To Decode ..", i==1,2 (iteration 1)
         even_output = self.input_layer.forward(x)
@@ -102,13 +100,3 @@ class SequentialWBPDecoder(Trainer):
             if not_satisfied.size(0) == 0:
                 break
         return output_list, not_satisfied_list
-
-    def forward(self, x):
-        batch_size = min(MAX_SIZE, x.shape[0])
-        total_decoded_words = []
-        for i in range(x.shape[0] // batch_size):
-            output_list, not_satisfied_list = self._forward(x[i * batch_size:(i + 1) * batch_size])
-            decoded_words = torch.round(torch.sigmoid(-output_list[-1]))
-            total_decoded_words.append(decoded_words)
-        total_decoded_words = torch.cat(total_decoded_words)
-        return total_decoded_words

@@ -1,21 +1,20 @@
-# general
+# General setup parameters
 seed: 0 # run seed
-
-# channel
 channel_model: 'AWGN' # Physical channel models: ['AWGN']
-decoder_type: 'wbp' # 'wbp','bp','seq_wbp','model_based_bayesian_wbp'
-snr: 6 # validation SNR value. values: float.
-train_snr_start: 4
-train_snr_end: 7
+decoder_type: 'bp' # 'bp','wbp','seq_wbp','model_based_bayesian_wbp'
 code_bits: 63
 info_bits: 36
 iterations: 5
 
-# protocol
-block_length: 18800 # coherence block time, total size of pilot + data. values: int.
-pilot_size: 12800 # pilot bits
-blocks_num: 20 # number of validation frames. values: int.
-
-# online training hyperparameters
+# Training
+train_snr_start: 4
+train_snr_end: 7
+train_block_size: 500 # coherence block time, total size of pilot + data. values: int.
+train_blocks_num: 30 # number of train frames. values: int.
 loss_type: 'BCEWithLogits' # Loss type. values: 'BCEWithLogits','CrossEntropy','MSE'.
 optimizer_type: 'Adam' # Optimizer type. values: 'Adam','RMSprop','SGD'.
+
+# Validation
+val_snr: 6 # validation SNR value. values: float.
+val_block_size: 5000 # coherence block time, total size of pilot + data. values: int.
+val_blocks_num: 20 # number of validation frames. values: int.

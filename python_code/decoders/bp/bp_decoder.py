@@ -3,7 +3,7 @@ import torch
 from python_code import DEVICE
 from python_code.decoders.bp_nn import InputLayer, OddLayer, EvenLayer, OutputLayer
 from python_code.decoders.trainer import Trainer
-from python_code.utils.constants import MAX_SIZE, CLIPPING_VAL
+from python_code.utils.constants import CLIPPING_VAL
 from python_code.utils.python_utils import syndrome_condition
 
 
@@ -11,7 +11,6 @@ class BPDecoder(Trainer):
     def __init__(self):
         super().__init__()
         self.lr = None
-        self.is_online_training = False
         self.initialize_layers()
 
     def __str__(self):
@@ -36,7 +35,7 @@ class BPDecoder(Trainer):
     def _online_training(self, tx: torch.Tensor, rx: torch.Tensor):
         pass
 
-    def _forward(self, x):
+    def forward(self, x):
         """
         compute forward pass in the network
         :param x: [batch_size,N]
@@ -73,13 +72,3 @@ class BPDecoder(Trainer):
             if not_satisfied.size(0) == 0:
                 break
         return output_list, not_satisfied_list
-
-    def forward(self, x):
-        batch_size = min(MAX_SIZE, x.shape[0])
-        total_decoded_words = []
-        for i in range(x.shape[0] // batch_size):
-            output_list, not_satisfied_list = self._forward(x[i * batch_size:(i + 1) * batch_size])
-            decoded_words = torch.round(torch.sigmoid(-output_list[-1]))
-            total_decoded_words.append(decoded_words)
-        total_decoded_words = torch.cat(total_decoded_words)
-        return total_decoded_words
