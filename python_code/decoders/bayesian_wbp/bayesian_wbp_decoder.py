@@ -1,7 +1,8 @@
 import torch
 
 from python_code import DEVICE
-from python_code.decoders.bayesian_wbp.bayesian_bp_nn import InputLayer, EvenLayer, OddLayer, OutputLayer
+from python_code.decoders.bp_nn import InputLayer, EvenLayer, OutputLayer
+from python_code.decoders.bayesian_wbp.bayesian_bp_nn import BayesianOddLayer
 from python_code.decoders.trainer import Trainer
 from python_code.utils.constants import HALF, CLIPPING_VAL, MAX_SIZE
 from python_code.utils.python_utils import syndrome_condition
@@ -27,10 +28,10 @@ class BayesianWBPDecoder(Trainer):
         self.input_layer = InputLayer(input_output_layer_size=self._code_bits, neurons=self.neurons,
                                       code_pcm=self.code_pcm, clip_tanh=CLIPPING_VAL,
                                       bits_num=self._code_bits)
-        self.odd_layer = OddLayer(clip_tanh=CLIPPING_VAL,
-                                  input_output_layer_size=self._code_bits,
-                                  neurons=self.neurons,
-                                  code_pcm=self.code_pcm)
+        self.odd_layer = BayesianOddLayer(clip_tanh=CLIPPING_VAL,
+                                          input_output_layer_size=self._code_bits,
+                                          neurons=self.neurons,
+                                          code_pcm=self.code_pcm)
         self.even_layer = EvenLayer(CLIPPING_VAL, self.neurons, self.code_pcm)
         self.output_layer = OutputLayer(neurons=self.neurons,
                                         input_output_layer_size=self._code_bits,

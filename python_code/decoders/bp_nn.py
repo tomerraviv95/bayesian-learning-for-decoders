@@ -1,17 +1,16 @@
 import torch
 from torch.nn.parameter import Parameter
 
+from python_code import DEVICE
 from python_code.decoders.bp_nn_weights import initialize_w_init, initialize_w_c2v, init_w_skipconn2even, \
     initialize_w_v2c, init_w_output
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class InputLayer(torch.nn.Module):
     def __init__(self, input_output_layer_size, neurons, code_pcm, clip_tanh, bits_num):
         super(InputLayer, self).__init__()
         self.input_weights = initialize_w_init(input_output_layer_size=input_output_layer_size, neurons=neurons,
-                                               code_pcm=code_pcm).to(device=device)
+                                               code_pcm=code_pcm).to(device=DEVICE)
         self.neurons = neurons
         self.clip_tanh = clip_tanh
         self.N = bits_num
@@ -31,11 +30,8 @@ class EvenLayer(torch.nn.Module):
     def __init__(self, clip_tanh, neurons, code_pcm):
         super(EvenLayer, self).__init__()
         w_even2odd, w_even2odd_mask = initialize_w_c2v(neurons=neurons, code_pcm=code_pcm)
-        if torch.cuda.is_available():
-            self.even_weights = Parameter(w_even2odd.cuda())
-        else:
-            self.even_weights = Parameter(w_even2odd)
-        self.w_even2odd_mask = w_even2odd_mask.to(device=device)
+        self.even_weights = Parameter(w_even2odd.to(DEVICE))
+        self.w_even2odd_mask = w_even2odd_mask.to(device=DEVICE)
         self.neurons = neurons
         self.clip_tanh = clip_tanh
 
@@ -59,14 +55,10 @@ class OddLayer(torch.nn.Module):
                                                                      neurons=neurons,
                                                                      code_pcm=code_pcm)
         w_odd2even, w_odd2even_mask = initialize_w_v2c(neurons=neurons, code_pcm=code_pcm)
-        if torch.cuda.is_available():
-            self.odd_weights = Parameter(w_odd2even.cuda())
-            self.llr_weights = Parameter(w_skipconn2even.cuda())
-        else:
-            self.odd_weights = Parameter(w_odd2even)
-            self.llr_weights = Parameter(w_skipconn2even)
-        self.w_odd2even_mask = w_odd2even_mask.to(device=device)
-        self.w_skipconn2even_mask = w_skipconn2even_mask.to(device=device)
+        self.odd_weights = Parameter(w_odd2even.to(DEVICE))
+        self.llr_weights = Parameter(w_skipconn2even.to(DEVICE))
+        self.w_odd2even_mask = w_odd2even_mask.to(device=DEVICE)
+        self.w_skipconn2even_mask = w_skipconn2even_mask.to(device=DEVICE)
         self.clip_tanh = clip_tanh
 
     def forward(self, x, llr, llr_mask_only=False):
@@ -85,11 +77,8 @@ class OutputLayer(torch.nn.Module):
         super(OutputLayer, self).__init__()
         w_output, w_output_mask = init_w_output(neurons=neurons, input_output_layer_size=input_output_layer_size,
                                                 code_pcm=code_pcm)
-        if torch.cuda.is_available():
-            self.output_weights = Parameter(w_output.cuda())
-        else:
-            self.output_weights = Parameter(w_output)
-        self.w_output_mask = w_output_mask.to(device=device)
+        self.output_weights = Parameter(w_output.to(DEVICE))
+        self.w_output_mask = w_output_mask.to(device=DEVICE)
 
     def forward(self, x, mask_only=False):
         if mask_only:

@@ -1,12 +1,12 @@
 import torch
 
 from python_code import DEVICE
-from python_code.decoders.sequential_wbp.seq_bp_nn import InputLayer, OddLayer, EvenLayer, OutputLayer
+from python_code.decoders.bp_nn import InputLayer, OddLayer, EvenLayer, OutputLayer
 from python_code.decoders.trainer import Trainer
 from python_code.utils.constants import MAX_SIZE, CLIPPING_VAL
 from python_code.utils.python_utils import syndrome_condition
 
-EPOCHS = 4000
+EPOCHS = 500
 BATCH_SIZE = 128
 
 
