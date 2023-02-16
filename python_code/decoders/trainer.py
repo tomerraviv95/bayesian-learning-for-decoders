@@ -101,9 +101,10 @@ class Trainer(nn.Module):
 
     def train_and_eval(self):
         for block_ind in range(conf.train_blocks_num):
+            print('*' * 20)
             print(f'Training on block {block_ind}')
             # draw words from channel
-            tx, rx = self.channel_dataset.__getitem__(
+            tx, rx = self.train_channel_dataset.__getitem__(
                 snr_list=list(range(conf.train_snr_start, conf.train_snr_end + 1)))
             # train the decoder
             self._online_training(tx, rx)
@@ -117,13 +118,12 @@ class Trainer(nn.Module):
         """
         total_ber = []
         for block_ind in range(conf.val_blocks_num):
-            print('*' * 20)
-            tx, rx = self.channel_dataset.__getitem__(snr_list=[conf.val_snr])
+            tx, rx = self.val_channel_dataset.__getitem__(snr_list=[conf.val_snr])
             # detect data part after training on the pilot part
-            decoded_words = self.forward(rx)
+            output_list, not_satisfied_list = self.forward(rx)
+            decoded_words = torch.round(torch.sigmoid(-output_list[-1]))
             # calculate accuracy
             ber = calculate_ber(decoded_words, tx)
-            print(f'current: {block_ind, ber}')
             total_ber.append(ber)
         print(f'Final ser: {sum(total_ber) / len(total_ber)}')
         return total_ber

@@ -7,14 +7,15 @@ from python_code.utils.constants import MAX_SIZE, CLIPPING_VAL
 from python_code.utils.python_utils import syndrome_condition
 
 EPOCHS = 500
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 
 
 class WBPDecoder(Trainer):
     def __init__(self):
         super().__init__()
         self.lr = 1e-3
-        self.is_online_training = True
+        self.initialize_layers()
+        self.deep_learning_setup(self.lr)
 
     def __str__(self):
         return 'WBP Decoder'
@@ -44,13 +45,11 @@ class WBPDecoder(Trainer):
         return loss
 
     def _online_training(self, tx: torch.Tensor, rx: torch.Tensor):
-        self.initialize_layers()
-        self.deep_learning_setup(self.lr)
         for _ in range(EPOCHS):
             # select 5 samples randomly
             idx = torch.randperm(tx.shape[0])[:BATCH_SIZE]
             cur_tx, cur_rx = tx[idx], rx[idx]
-            output_list, not_satisfied_list = self._forward(cur_rx)
+            output_list, not_satisfied_list = self.forward(cur_rx)
             # calculate loss
             loss = self.calc_loss(decision=output_list[-self.iteration_num:], labels=cur_tx,
                                   not_satisfied_list=not_satisfied_list)
@@ -58,7 +57,7 @@ class WBPDecoder(Trainer):
             loss.backward()
             self.optimizer.step()
 
-    def _forward(self, x):
+    def forward(self, x):
         """
         compute forward pass in the network
         :param x: [batch_size,N]
@@ -95,13 +94,3 @@ class WBPDecoder(Trainer):
             if not_satisfied.size(0) == 0:
                 break
         return output_list, not_satisfied_list
-
-    def forward(self, x):
-        batch_size = min(MAX_SIZE, x.shape[0])
-        total_decoded_words = []
-        for i in range(x.shape[0] // batch_size):
-            output_list, not_satisfied_list = self._forward(x[i * batch_size:(i + 1) * batch_size])
-            decoded_words = torch.round(torch.sigmoid(-output_list[-1]))
-            total_decoded_words.append(decoded_words)
-        total_decoded_words = torch.cat(total_decoded_words)
-        return total_decoded_words

@@ -29,7 +29,7 @@ class EccChannel:
         x = self.encoding(tx)
         s = self.modulation.modulate(x)
         rx = self.channel(tx=s, SNR=snr, R=self.rate, random=np.random.RandomState(conf.seed))
-        return rx, x
+        return x, rx
 
     def get_vectors(self, snr: float) -> Tuple[np.ndarray, np.ndarray]:
         # get channel values
