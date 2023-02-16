@@ -4,7 +4,7 @@ from python_code import DEVICE
 from python_code.decoders.bayesian_wbp.bayesian_bp_nn import BayesianOddLayer
 from python_code.decoders.bp_nn import InputLayer, EvenLayer, OutputLayer
 from python_code.decoders.trainer import Trainer
-from python_code.utils.constants import HALF, CLIPPING_VAL
+from python_code.utils.constants import HALF, CLIPPING_VAL, Phase
 from python_code.utils.python_utils import syndrome_condition
 
 EPOCHS = 300
@@ -99,7 +99,7 @@ class BayesianWBPDecoder(Trainer):
         output = cur_rx + self.output_layer.forward(even_output_cur, mask_only=self.output_mask_only)
         return output
 
-    def forward(self, x):
+    def forward(self, x, phase: Phase):
         """
         compute forward pass in the network
         :param x: [batch_size,N]
@@ -137,9 +137,6 @@ class BayesianWBPDecoder(Trainer):
             output_list[i + 1] = output_not_satisfied.clone()
             not_satisfied_list[i] = not_satisfied.clone()
 
-            if self.filter_in_iterations_eval and not output_not_satisfied.requires_grad:
-                output_list[-1][not_satisfied] = output_not_satisfied.clone()
-                not_satisfied = syndrome_condition(not_satisfied, output_not_satisfied, self.code_pcm)
             if not_satisfied.size(0) == 0:
                 break
         return output_list, not_satisfied_list

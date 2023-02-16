@@ -1,9 +1,9 @@
 import torch
 
 from python_code import DEVICE
-from python_code.decoders.trainer import Trainer
 from python_code.decoders.bp_nn import InputLayer, OddLayer, EvenLayer, OutputLayer
-from python_code.utils.constants import MAX_SIZE, CLIPPING_VAL
+from python_code.decoders.trainer import Trainer
+from python_code.utils.constants import CLIPPING_VAL, Phase
 from python_code.utils.python_utils import syndrome_condition
 
 EPOCHS = 500
@@ -49,7 +49,7 @@ class WBPDecoder(Trainer):
             # select 5 samples randomly
             idx = torch.randperm(tx.shape[0])[:BATCH_SIZE]
             cur_tx, cur_rx = tx[idx], rx[idx]
-            output_list, not_satisfied_list = self.forward(cur_rx)
+            output_list, not_satisfied_list = self.forward(cur_rx, phase=Phase.TRAIN)
             # calculate loss
             loss = self.calc_loss(decision=output_list[-self.iteration_num:], labels=cur_tx,
                                   not_satisfied_list=not_satisfied_list)
@@ -57,7 +57,7 @@ class WBPDecoder(Trainer):
             loss.backward()
             self.optimizer.step()
 
-    def forward(self, x):
+    def forward(self, x, phase: Phase):
         """
         compute forward pass in the network
         :param x: [batch_size,N]
@@ -67,17 +67,17 @@ class WBPDecoder(Trainer):
         output_list = [0] * self.iteration_num
         not_satisfied_list = [0] * (self.iteration_num - 1)
         not_satisfied = torch.arange(x.size(0), dtype=torch.long, device=DEVICE)
+        output_list[-1] = torch.zeros_like(x)
 
         # equation 1 and 2 from "Learning To Decode ..", i==1,2 (iteration 1)
         even_output = self.input_layer.forward(x)
-        output_list[0] = torch.index_select(x, 0, not_satisfied) + self.output_layer.forward(
-            even_output[not_satisfied], mask_only=self.output_layer)
+        output_list[0] = x[not_satisfied] + self.output_layer.forward(even_output[not_satisfied],
+                                                                      mask_only=self.output_layer)
 
         # now start iterating through all hidden layers i>2 (iteration 2 - Imax)
         for i in range(0, self.iteration_num - 1):
             # odd - variables to check
-            odd_output_not_satisfied = self.odd_layer.forward(torch.index_select(even_output, 0, not_satisfied),
-                                                              torch.index_select(x, 0, not_satisfied),
+            odd_output_not_satisfied = self.odd_layer.forward(even_output[not_satisfied], x[not_satisfied],
                                                               llr_mask_only=self.odd_llr_mask_only)
             # even - check to variables
             even_output[not_satisfied] = self.even_layer.forward(odd_output_not_satisfied,
@@ -87,10 +87,6 @@ class WBPDecoder(Trainer):
                 even_output[not_satisfied], mask_only=self.output_mask_only)
             output_list[i + 1] = output_not_satisfied.clone()
             not_satisfied_list[i] = not_satisfied.clone()
-
-            if self.filter_in_iterations_eval and not output_not_satisfied.requires_grad:
-                output_list[-1][not_satisfied] = output_not_satisfied.clone()
-                not_satisfied = syndrome_condition(not_satisfied, output_not_satisfied, self.code_pcm)
             if not_satisfied.size(0) == 0:
                 break
         return output_list, not_satisfied_list

@@ -3,7 +3,7 @@ import torch
 from python_code import DEVICE
 from python_code.decoders.bp_nn import InputLayer, OddLayer, EvenLayer, OutputLayer
 from python_code.decoders.trainer import Trainer
-from python_code.utils.constants import CLIPPING_VAL
+from python_code.utils.constants import CLIPPING_VAL, Phase
 from python_code.utils.python_utils import syndrome_condition
 
 EPOCHS = 500
@@ -63,7 +63,7 @@ class SequentialWBPDecoder(Trainer):
                     # even - check to variables
                     even_output = self.even_layer.forward(odd_output, mask_only=self.even_mask_only)
 
-    def forward(self, x):
+    def forward(self, x, phase: Phase):
         """
         compute forward pass in the network
         :param x: [batch_size,N]
@@ -94,7 +94,7 @@ class SequentialWBPDecoder(Trainer):
             output_list[i + 1] = output_not_satisfied.clone()
             not_satisfied_list[i] = not_satisfied.clone()
 
-            if self.filter_in_iterations_eval and not output_not_satisfied.requires_grad:
+            if self.filter_in_iterations_eval and phase == Phase.VAL:
                 output_list[-1][not_satisfied] = output_not_satisfied.clone()
                 not_satisfied = syndrome_condition(not_satisfied, output_not_satisfied, self.code_pcm)
             if not_satisfied.size(0) == 0:

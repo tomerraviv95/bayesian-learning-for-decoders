@@ -5,9 +5,10 @@ CLIPPING_VAL = 20
 TANNER_GRAPH_CYCLE_REDUCTION = True
 MAX_SIZE = 1000
 
+
 class Phase(Enum):
     TRAIN = 'train'
-    TEST = 'test'
+    VAL = 'val'
 
 
 class ChannelModes(Enum):

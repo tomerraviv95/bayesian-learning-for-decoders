@@ -3,7 +3,7 @@ import torch
 from python_code import DEVICE
 from python_code.decoders.bp_nn import InputLayer, OddLayer, EvenLayer, OutputLayer
 from python_code.decoders.trainer import Trainer
-from python_code.utils.constants import CLIPPING_VAL
+from python_code.utils.constants import CLIPPING_VAL, Phase
 from python_code.utils.python_utils import syndrome_condition
 
 
@@ -35,7 +35,7 @@ class BPDecoder(Trainer):
     def _online_training(self, tx: torch.Tensor, rx: torch.Tensor):
         pass
 
-    def forward(self, x):
+    def forward(self, x, phase: Phase):
         """
         compute forward pass in the network
         :param x: [batch_size,N]
