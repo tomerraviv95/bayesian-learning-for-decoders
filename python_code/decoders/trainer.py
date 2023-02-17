@@ -108,8 +108,8 @@ class Trainer(nn.Module):
             # train the decoder
             self._online_training(tx, rx)
             print('Evaluating...')
-            avg_ber = self.eval()
-        return avg_ber
+            min_ber = self.eval()
+        return min_ber
 
     def eval(self) -> float:
         """
@@ -126,9 +126,9 @@ class Trainer(nn.Module):
                 # calculate accuracy
                 ber = calculate_ber(decoded_words, tx)
                 total_ber.append(ber)
-        avg_ber = sum(total_ber) / len(total_ber)
-        print(f'Final ser: {avg_ber}')
-        return avg_ber
+        min_ber = min(total_ber)
+        print(f'Final ser: {min_ber}')
+        return min_ber
 
     def run_train_loop(self, est: torch.Tensor, tx: torch.Tensor) -> float:
         # calculate loss

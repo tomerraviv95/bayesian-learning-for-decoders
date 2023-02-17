@@ -1,9 +1,8 @@
 from enum import Enum
 
 HALF = 0.5
-CLIPPING_VAL = 20
+CLIPPING_VAL = 10
 TANNER_GRAPH_CYCLE_REDUCTION = True
-MAX_SIZE = 1000
 
 
 class Phase(Enum):
