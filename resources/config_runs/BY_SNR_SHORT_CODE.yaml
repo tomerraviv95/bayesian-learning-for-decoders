@@ -17,4 +17,4 @@ optimizer_type: 'Adam' # Optimizer type. values: 'Adam','RMSprop','SGD'.
 # Validation
 val_snr: 6 # validation SNR value. values: float.
 val_block_size: 5000 # coherence block time, total size of pilot + data. values: int.
-val_blocks_num: 20 # number of validation frames. values: int.
+val_blocks_num: 50 # number of validation frames. values: int.

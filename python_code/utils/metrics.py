@@ -7,14 +7,17 @@ import torch
 SENSITIVITY = 1e-3
 
 
-def calculate_ber(prediction: torch.Tensor, target: torch.Tensor) -> float:
+def calculate_ber(prediction: torch.Tensor, target: torch.Tensor) -> Tuple[float, int]:
     """
     Returns the calculated ber of the prediction and the target (ground truth transmitted word)
     """
     prediction = prediction.long()
     target = target.long()
-    bits_acc = torch.mean(torch.eq(prediction, target).float()).item()
-    return 1 - bits_acc
+    equal_bits = torch.eq(prediction, target).float()
+    non_equal_bits = 1 - equal_bits
+    errors = int(torch.sum(non_equal_bits).item())
+    ber = float(torch.mean(non_equal_bits).item())
+    return ber, errors
 
 
 def calculate_reliability_and_ece(correct_values_list: List[float], error_values_list: List[float],

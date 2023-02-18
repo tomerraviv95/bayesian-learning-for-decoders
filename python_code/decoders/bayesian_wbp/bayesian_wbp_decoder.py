@@ -5,7 +5,7 @@ from python_code.decoders.bp_nn import InputLayer, EvenLayer, OutputLayer
 from python_code.decoders.trainer import Trainer
 from python_code.utils.constants import HALF, CLIPPING_VAL, Phase
 
-EPOCHS = 300
+EPOCHS = 100
 BATCH_SIZE = 64
 
 

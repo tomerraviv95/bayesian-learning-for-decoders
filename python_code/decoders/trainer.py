@@ -1,5 +1,5 @@
 import random
-from typing import List, Tuple
+from typing import Tuple
 
 import numpy as np
 import torch
@@ -18,6 +18,8 @@ random.seed(conf.seed)
 torch.manual_seed(conf.seed)
 torch.cuda.manual_seed(conf.seed)
 np.random.seed(conf.seed)
+
+MIN_EVAL_ERRORS = 500
 
 
 class Trainer(nn.Module):
@@ -98,7 +100,8 @@ class Trainer(nn.Module):
         """
         pass
 
-    def train_and_eval(self) -> List[float]:
+    def train_and_eval(self) -> float:
+        total_bers = []
         for block_ind in range(conf.train_blocks_num):
             print('*' * 20)
             print(f'Training on block {block_ind}')
@@ -108,8 +111,9 @@ class Trainer(nn.Module):
             # train the decoder
             self._online_training(tx, rx)
             print('Evaluating...')
-            min_ber = self.eval()
-        return min_ber
+            avg_ber = self.eval()
+            total_bers.append(avg_ber)
+        return min(total_bers)
 
     def eval(self) -> float:
         """
@@ -117,18 +121,22 @@ class Trainer(nn.Module):
         :return: list of ber per block
         """
         total_ber = []
+        total_errors = 0
         with torch.no_grad():
-            for block_ind in range(conf.val_blocks_num):
-                tx, rx = self.val_channel_dataset.__getitem__(snr_list=[conf.val_snr])
-                # detect data part after training on the pilot part
-                output_list = self.forward(rx, phase=Phase.VAL)
-                decoded_words = torch.round(torch.sigmoid(-output_list[-1]))
-                # calculate accuracy
-                ber = calculate_ber(decoded_words, tx)
-                total_ber.append(ber)
-        min_ber = min(total_ber)
-        print(f'Final ser: {min_ber}')
-        return min_ber
+            while total_errors < MIN_EVAL_ERRORS:
+                for block_ind in range(conf.val_blocks_num):
+                    tx, rx = self.val_channel_dataset.__getitem__(snr_list=[conf.val_snr])
+                    # detect data part after training on the pilot part
+                    output_list = self.forward(rx, phase=Phase.VAL)
+                    decoded_words = torch.round(torch.sigmoid(-output_list[-1]))
+                    # calculate accuracy
+                    ber, errors = calculate_ber(decoded_words, tx)
+                    total_ber.append(ber)
+                    total_errors += errors
+                print(f'Total errors so far: {total_errors}')
+        avg_ber = sum(total_ber) / len(total_ber)
+        print(f'Final ser: {avg_ber}')
+        return avg_ber
 
     def run_train_loop(self, est: torch.Tensor, tx: torch.Tensor) -> float:
         # calculate loss

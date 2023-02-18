@@ -29,20 +29,20 @@ def get_config(plot_type: PlotType) -> Tuple[List[Dict], list, str, str]:
                      PlotType.BY_SNR_127_99_CODE, PlotType.BY_SNR_127_99_CODE_10_ITERS,
                      PlotType.BY_SNR_127_99_CODE_20_ITERS]:
         params_dicts = [
+            {'val_snr': 4, 'detector_type': DecoderType.bp.name},
             {'val_snr': 5, 'detector_type': DecoderType.bp.name},
             {'val_snr': 6, 'detector_type': DecoderType.bp.name},
             {'val_snr': 7, 'detector_type': DecoderType.bp.name},
-            {'val_snr': 8, 'detector_type': DecoderType.bp.name},
+            {'val_snr': 4, 'detector_type': DecoderType.wbp.name, 'train_blocks_num': 30},
             {'val_snr': 5, 'detector_type': DecoderType.wbp.name, 'train_blocks_num': 30},
             {'val_snr': 6, 'detector_type': DecoderType.wbp.name, 'train_blocks_num': 30},
             {'val_snr': 7, 'detector_type': DecoderType.wbp.name, 'train_blocks_num': 30},
-            {'val_snr': 8, 'detector_type': DecoderType.wbp.name, 'train_blocks_num': 30},
-            {'val_snr': 5, 'detector_type': DecoderType.model_based_bayesian_wbp.name, 'train_blocks_num': 3},
-            {'val_snr': 6, 'detector_type': DecoderType.model_based_bayesian_wbp.name, 'train_blocks_num': 3},
-            {'val_snr': 7, 'detector_type': DecoderType.model_based_bayesian_wbp.name, 'train_blocks_num': 3},
-            {'val_snr': 8, 'detector_type': DecoderType.model_based_bayesian_wbp.name, 'train_blocks_num': 3},
+            {'val_snr': 4, 'detector_type': DecoderType.model_based_bayesian_wbp.name, 'train_blocks_num': 2},
+            {'val_snr': 5, 'detector_type': DecoderType.model_based_bayesian_wbp.name, 'train_blocks_num': 2},
+            {'val_snr': 6, 'detector_type': DecoderType.model_based_bayesian_wbp.name, 'train_blocks_num': 2},
+            {'val_snr': 7, 'detector_type': DecoderType.model_based_bayesian_wbp.name, 'train_blocks_num': 2},
         ]
-        values = list(range(5, 9, 1))
+        values = list(range(4, 8, 1))
         xlabel, ylabel = 'SNR', 'SER'
     else:
         raise ValueError('No such plot type!!!')
