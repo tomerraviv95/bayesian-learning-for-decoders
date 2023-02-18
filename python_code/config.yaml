@@ -1,10 +1,10 @@
 # General setup parameters
 seed: 0 # run seed
 channel_model: 'AWGN' # Physical channel models: ['AWGN']
-decoder_type: 'model_based_bayesian_wbp' # 'bp','wbp','seq_wbp','model_based_bayesian_wbp'
+decoder_type: 'wbp' # 'bp','wbp','seq_wbp','model_based_bayesian_wbp'
 code_bits: 127
 info_bits: 99
-iterations: 5
+iterations: 10
 
 # Training
 train_snr_start: 4
@@ -16,5 +16,5 @@ optimizer_type: 'Adam' # Optimizer type. values: 'Adam','RMSprop','SGD'.
 
 # Validation
 val_snr: 7 # validation SNR value. values: float.
-val_block_size: 1000 # coherence block time, total size of pilot + data. values: int.
+val_block_size: 100 # coherence block time, total size of pilot + data. values: int.
 val_blocks_num: 50 # number of validation frames. values: int.
