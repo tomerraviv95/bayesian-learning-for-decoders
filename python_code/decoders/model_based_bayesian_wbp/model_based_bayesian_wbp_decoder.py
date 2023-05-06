@@ -9,7 +9,7 @@ EPOCHS = 100
 BATCH_SIZE = 64
 
 
-class BayesianWBPDecoder(Trainer):
+class ModelBasedBayesianWBPDecoder(Trainer):
     def __init__(self):
         super().__init__()
         self.lr = 1e-3
@@ -21,7 +21,7 @@ class BayesianWBPDecoder(Trainer):
         self.deep_learning_setup(self.lr)
 
     def __str__(self):
-        return 'Bayesian WBP Decoder'
+        return 'Model-Based Bayesian WBP Decoder'
 
     def initialize_layers(self):
         self.input_layer = InputLayer(input_output_layer_size=self._code_bits, neurons=self.neurons,
@@ -61,26 +61,35 @@ class BayesianWBPDecoder(Trainer):
             # select samples randomly
             idx = torch.randperm(tx.shape[0])[:BATCH_SIZE]
             cur_tx, cur_rx = tx[idx], rx[idx]
-            arm_original, arm_tilde, u_list, kl_term, total_output = [], [], [], 0, 0
-            for _ in range(self.ensemble_num):
-                # initialize
-                even_output = self.input_layer.forward(cur_rx)
-                for i in range(0, self.iteration_num - 1):
+            # initialize
+            even_output = self.input_layer.forward(cur_rx)
+            for i in range(0, self.iteration_num - 1):
+                arm_original, arm_tilde, u_list, kl_term = [], [], [], 0
+                output = 0
+                for _ in range(self.ensemble_num):
                     # odd - variables to check
                     odd_output = self.odd_layer.forward(even_output, cur_rx, llr_mask_only=self.odd_llr_mask_only)
-                    # even - check to variables
-                    even_output = self.even_layer.forward(odd_output, mask_only=self.even_mask_only)
-                # output layer
-                output = cur_rx + self.output_layer.forward(even_output, mask_only=self.output_mask_only)
-                ### ARM
-                arm_original.append(output)
-                init_arm_tilde = self.odd_layer.init_arm_tilde
-                output_tilde = self.propagate(cur_rx, init_arm_tilde)
-                arm_tilde.append(output_tilde)
-                u_list.append(self.odd_layer.u)
-                total_output += output
-            total_output /= self.ensemble_num
-            self.calc_loss(cur_tx, total_output, arm_original, arm_tilde, u_list, self.odd_layer.dropout_logit, kl_term)
+                    # propagate
+                    cur_output = self.propagate(cur_rx, odd_output)
+                    ### ARM
+                    arm_original.append(cur_output)
+                    init_arm_tilde = self.odd_layer.init_arm_tilde
+                    output_tilde = self.propagate(cur_rx, init_arm_tilde)
+                    arm_tilde.append(output_tilde)
+                    u_list.append(self.odd_layer.u)
+                    output += cur_output
+                kl_term = self.odd_layer.kl_term
+                output /= self.ensemble_num
+                self.calc_loss(cur_tx, output, arm_original, arm_tilde, u_list, self.odd_layer.dropout_logit, kl_term)
+                with torch.no_grad():
+                    even_output_est = 0
+                    # update the even_output to the next layer
+                    for _ in range(self.ensemble_num):
+                        # odd - variables to check
+                        odd_output = self.odd_layer.forward(even_output, cur_rx, llr_mask_only=self.odd_llr_mask_only)
+                        # even - check to variables
+                        even_output_est += self.even_layer.forward(odd_output, mask_only=self.even_mask_only)
+                    even_output = even_output_est / self.ensemble_num
 
     def propagate(self, cur_rx, odd_output):
         # even - check to variables
@@ -103,14 +112,20 @@ class BayesianWBPDecoder(Trainer):
         output_list[0] = x + self.output_layer.forward(even_output, mask_only=self.output_layer)
 
         # now start iterating through all hidden layers i>2 (iteration 2 - Imax)
-        for _ in range(self.ensemble_num):
-            for i in range(0, self.iteration_num - 1):
+        for i in range(0, self.iteration_num - 1):
+            output, total_even_output = 0, 0
+            for _ in range(self.ensemble_num):
                 # odd - variables to check
-                odd_output = self.odd_layer.forward(even_output, x, llr_mask_only=self.odd_llr_mask_only)
+                odd_output_not_satisfied = self.odd_layer.forward(even_output, x, llr_mask_only=self.odd_llr_mask_only)
                 # even - check to variables
-                even_output = self.even_layer.forward(odd_output, mask_only=self.even_mask_only)
+                even_output_not_satisfied = self.even_layer.forward(odd_output_not_satisfied,
+                                                                    mask_only=self.even_mask_only)
+                total_even_output += even_output_not_satisfied
                 # output layer
-                output = x + self.output_layer.forward(even_output, mask_only=self.output_mask_only)
-                output_list[i + 1] += output.clone()
-        output_list[1:] /= self.ensemble_num
+                output += x + self.output_layer.forward(even_output_not_satisfied, mask_only=self.output_mask_only)
+
+            even_output = total_even_output / self.ensemble_num
+            output /= self.ensemble_num
+            output_list[i + 1] = output.clone()
+
         return output_list

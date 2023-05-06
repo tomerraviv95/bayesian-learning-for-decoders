@@ -57,7 +57,7 @@ class SequentialWBPDecoder(Trainer):
                 with torch.no_grad():
                     # update the even_output to the next layer
                     # odd - variables to check
-                    odd_output = self.odd_layer.forward(even_output, cur_rx, llr_mask_only=self.odd_llr_mask_only)
+                    odd_output = self.odd_layer.forward(even_output_cur, cur_rx, llr_mask_only=self.odd_llr_mask_only)
                     # even - check to variables
                     even_output = self.even_layer.forward(odd_output, mask_only=self.even_mask_only)
 
