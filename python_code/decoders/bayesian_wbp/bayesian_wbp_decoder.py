@@ -6,7 +6,7 @@ from python_code.decoders.trainer import Trainer
 from python_code.utils.constants import HALF, CLIPPING_VAL, Phase
 
 EPOCHS = 100
-BATCH_SIZE = 64
+BATCH_SIZE = 120
 
 
 class BayesianWBPDecoder(Trainer):
@@ -97,13 +97,11 @@ class BayesianWBPDecoder(Trainer):
         """
         # initialize parameters
         output_list = [0] * (self.iteration_num)
-
-        # equation 1 and 2 from "Learning To Decode ..", i==1,2 (iteration 1)
-        even_output = self.input_layer.forward(x)
-        output_list[0] = x + self.output_layer.forward(even_output, mask_only=self.output_layer)
-
         # now start iterating through all hidden layers i>2 (iteration 2 - Imax)
         for _ in range(self.ensemble_num):
+            # equation 1 and 2 from "Learning To Decode ..", i==1,2 (iteration 1)
+            even_output = self.input_layer.forward(x)
+            output_list[0] = x + self.output_layer.forward(even_output, mask_only=self.output_layer)
             for i in range(0, self.iteration_num - 1):
                 # odd - variables to check
                 odd_output = self.odd_layer.forward(even_output, x, llr_mask_only=self.odd_llr_mask_only)
@@ -112,5 +110,6 @@ class BayesianWBPDecoder(Trainer):
                 # output layer
                 output = x + self.output_layer.forward(even_output, mask_only=self.output_mask_only)
                 output_list[i + 1] += output.clone()
-        output_list[1:] /= self.ensemble_num
+        for i in range(0, self.iteration_num - 1):
+            output_list[i + 1] /= self.ensemble_num
         return output_list

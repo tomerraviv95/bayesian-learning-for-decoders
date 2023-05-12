@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, auto
 
 HALF = 0.5
 CLIPPING_VAL = 10
@@ -19,9 +19,10 @@ class ChannelModels(Enum):
 
 
 class DecoderType(Enum):
-    bp = 'wbp'
-    wbp = 'bp'
+    bp = 'bp'
+    wbp = 'wbp'
     seq_wbp = 'seq_wbp'
+    bayesian_wbp = 'bayesian_wbp'
     model_based_bayesian_wbp = 'model_based_bayesian_wbp'
 
 

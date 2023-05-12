@@ -113,6 +113,8 @@ class Trainer(nn.Module):
             print('Evaluating...')
             avg_ber = self.eval()
             total_bers.append(avg_ber)
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
         return min(total_bers)
 
     def eval(self) -> float:

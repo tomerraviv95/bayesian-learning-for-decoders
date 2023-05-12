@@ -5,7 +5,7 @@ from python_code.decoders.trainer import Trainer
 from python_code.utils.constants import CLIPPING_VAL, Phase
 
 EPOCHS = 500
-BATCH_SIZE = 64
+BATCH_SIZE = 120
 
 
 class WBPDecoder(Trainer):
@@ -41,7 +41,7 @@ class WBPDecoder(Trainer):
 
     def _online_training(self, tx: torch.Tensor, rx: torch.Tensor):
         for _ in range(EPOCHS):
-            # select 5 samples randomly
+            # select BATCH_SIZE samples randomly
             idx = torch.randperm(tx.shape[0])[:BATCH_SIZE]
             cur_tx, cur_rx = tx[idx], rx[idx]
             output_list = self.forward(cur_rx, phase=Phase.TRAIN)
