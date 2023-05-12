@@ -7,11 +7,11 @@ from python_code.utils.constants import DecoderType
 class PlotType(Enum):
     ## The Three Figures for the Paper
     BY_SNR_63_45_CODE = 'BY_SNR_63_45_CODE'
-    BY_SNR_127_99_CODE = 'BY_SNR_127_99_CODE'
+    BY_SNR_127_64_CODE = 'BY_SNR_127_64_CODE'
 
 
 def get_config(plot_type: PlotType) -> Tuple[List[Dict], list, str, str]:
-    if plot_type in [PlotType.BY_SNR_63_45_CODE, PlotType.BY_SNR_127_99_CODE]:
+    if plot_type in [PlotType.BY_SNR_63_45_CODE, PlotType.BY_SNR_127_64_CODE]:
         params_dicts = [
             {'val_snr': 4, 'detector_type': DecoderType.bp.name},
             {'val_snr': 5, 'detector_type': DecoderType.bp.name},
