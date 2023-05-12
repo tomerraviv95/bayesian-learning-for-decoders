@@ -1,6 +1,5 @@
 import datetime
 import os
-from itertools import chain
 from typing import List, Tuple, Dict
 
 import matplotlib as mpl
@@ -8,7 +7,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from dir_definitions import FIGURES_DIR, PLOTS_DIR
-from python_code import conf
 from python_code.decoders.trainer import Trainer
 from python_code.utils.python_utils import load_pkl, save_pkl
 
@@ -31,46 +29,40 @@ WIDTH_SCALING = 0.75
 
 
 def get_linestyle(method_name: str) -> str:
-    if 'Bayesian' in method_name:
+    if 'Model-Based' in method_name:
         return 'solid'
-    elif 'WBP' in method_name:
+    elif 'Bayesian' in method_name:
         return 'dashed'
+    elif 'WBP' in method_name:
+        return '-.'
     elif 'BP' in method_name:
         return 'dotted'
-    elif 'm' in method_name:
-        return '-.'
-    elif 'm' in method_name:
-        return '-.'
     else:
         raise ValueError('No such detector!!!')
 
 
 def get_marker(method_name: str) -> str:
-    if 'Bayesian' in method_name:
+    if 'Model-Based' in method_name:
         return 'o'
-    elif 'WBP' in method_name:
+    elif 'Bayesian' in method_name:
         return 'X'
-    elif 'BP' in method_name:
+    elif 'WBP' in method_name:
         return 's'
-    elif 'm' in method_name:
-        return 'p'
-    elif 'm' in method_name:
+    elif 'BP' in method_name:
         return 'p'
     else:
         raise ValueError('No such method!!!')
 
 
 def get_color(method_name: str) -> str:
-    if 'Bayesian' in method_name:
+    if 'Model-Based' in method_name:
         return 'blue'
-    elif 'WBP' in method_name:
+    elif 'Bayesian' in method_name:
         return 'black'
-    elif 'BP' in method_name:
+    elif 'WBP' in method_name:
         return 'red'
-    elif 'm' in method_name:
+    elif 'BP' in method_name:
         return 'purple'
-    elif 'm' in method_name:
-        return 'green'
     else:
         raise ValueError('No such method!!!')
 
