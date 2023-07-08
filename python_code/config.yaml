@@ -1,9 +1,10 @@
 # General setup parameters
 seed: 0 # run seed
 channel_model: 'AWGN' # Physical channel models: ['AWGN']
-decoder_type: 'bayesian_wbp' # 'bp','wbp','seq_wbp','bayesian_wbp','model_based_bayesian_wbp'
-code_bits: 63
-info_bits: 45
+decoder_type: 'bp' # 'bp','wbp','seq_wbp','bayesian_wbp','model_based_bayesian_wbp'
+code_bits: 64
+info_bits: 48
+code_type: 'POLAR'
 iterations: 5
 
 # Training

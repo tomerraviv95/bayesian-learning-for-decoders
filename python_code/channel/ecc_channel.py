@@ -7,8 +7,7 @@ from dir_definitions import ECC_MATRICES_DIR
 from python_code import conf
 from python_code.channel.awgn_channel import AWGNChannel
 from python_code.channel.modulator import BPSKModulation
-from python_code.utils.constants import TANNER_GRAPH_CYCLE_REDUCTION
-from python_code.utils.python_utils import load_code_parameters
+from python_code.utils.coding_utils import get_code_pcm_and_gm
 
 
 class EccChannel:
@@ -17,8 +16,8 @@ class EccChannel:
         self._bits_generator = default_rng(seed=conf.seed)
         self._code_bits = conf.code_bits
         self._info_bits = conf.info_bits
-        self.code_pcm, self.code_gm = load_code_parameters(self._code_bits, self._info_bits,
-                                                           ECC_MATRICES_DIR, TANNER_GRAPH_CYCLE_REDUCTION)
+        self.code_pcm, self.code_gm = get_code_pcm_and_gm(self._code_bits, self._info_bits,
+                                                          ECC_MATRICES_DIR, conf.code_type)
         self.encoding = lambda u: (np.dot(u, self.code_gm) % 2)
         self.modulation = BPSKModulation
         self.channel = AWGNChannel

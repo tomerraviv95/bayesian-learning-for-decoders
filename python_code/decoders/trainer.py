@@ -10,9 +10,9 @@ from torch.optim import RMSprop, Adam, SGD
 from dir_definitions import ECC_MATRICES_DIR
 from python_code import DEVICE, conf
 from python_code.channel.channel_dataset import ChannelModelDataset
-from python_code.utils.constants import TANNER_GRAPH_CYCLE_REDUCTION, Phase
+from python_code.utils.coding_utils import get_code_pcm_and_gm
+from python_code.utils.constants import Phase
 from python_code.utils.metrics import calculate_ber
-from python_code.utils.python_utils import load_code_parameters
 
 random.seed(conf.seed)
 torch.manual_seed(conf.seed)
@@ -42,8 +42,8 @@ class Trainer(nn.Module):
         self.iteration_num = conf.iterations
         self._code_bits = conf.code_bits
         self._info_bits = conf.info_bits
-        self.code_pcm, self.code_gm = load_code_parameters(self._code_bits, self._info_bits,
-                                                           ECC_MATRICES_DIR, TANNER_GRAPH_CYCLE_REDUCTION)
+        self.code_pcm, self.code_gm = get_code_pcm_and_gm(self._code_bits, self._info_bits,
+                                                          ECC_MATRICES_DIR, conf.code_type)
         self.neurons = int(np.sum(self.code_pcm))
 
     def get_name(self):
